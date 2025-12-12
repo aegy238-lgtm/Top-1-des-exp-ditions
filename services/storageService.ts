@@ -2,7 +2,7 @@ import { Order, OrderStatus, DashboardStats, AgencyConfig, User, PaymentMethod, 
 import { GLOBAL_APPS_CONFIG, GLOBAL_BANNER_CONFIG, GLOBAL_CONTACT_CONFIG } from '../config';
 import { firebaseConfig, ENABLE_CLOUD_DB } from '../firebaseConfig';
 import { initializeApp } from 'firebase/app';
-import { getFirestore, collection, addDoc, getDocs, getDoc, doc, updateDoc, setDoc, query, orderBy, limit } from 'firebase/firestore';
+import { getFirestore, collection, addDoc, getDocs, getDoc, doc, updateDoc, setDoc, query, orderBy, limit, deleteDoc } from 'firebase/firestore';
 
 // --- Local Storage Keys ---
 const ORDERS_KEY = 'haneen_orders';
@@ -350,7 +350,8 @@ export const registerUser = (email: string, password: string, username: string):
     balanceUSD: 0,
     balanceCoins: 0,
     createdAt: Date.now(),
-    isBanned: false
+    isBanned: false,
+    isDeactivated: false
   };
 
   users.push(newUser);
@@ -440,6 +441,11 @@ export const loginUser = (email: string, password: string): { success: boolean, 
       return { success: false, message: '⛔ عذراً، تم حظر حسابك نهائياً من قبل الإدارة لمخالفة القوانين.' };
   }
 
+  // 4. CHECK DEACTIVATION STATUS
+  if (user.isDeactivated) {
+      return { success: false, message: '🔕 تم تعطيل هذا الحساب أو إغلاق الصفحة مؤقتاً. يرجى التواصل مع الدعم لإعادة التنشيط.' };
+  }
+
   if (user.banExpiresAt && user.banExpiresAt > Date.now()) {
       const expireDate = new Date(user.banExpiresAt).toLocaleDateString('ar-EG');
       const expireTime = new Date(user.banExpiresAt).toLocaleTimeString('ar-EG');
@@ -471,8 +477,8 @@ export const getCurrentUser = (): User | null => {
         const freshUser = allUsers.find(u => u.id === sessionUser.id);
         
         if (freshUser) {
-            // Check Ban/Freeze on every refresh
-            if (freshUser.isBanned) {
+            // Check Ban/Freeze/Deactivation on every refresh
+            if (freshUser.isBanned || freshUser.isDeactivated) {
                 localStorage.removeItem(CURRENT_USER_KEY);
                 return null;
             }
@@ -633,6 +639,66 @@ export const adminResetUserPassword = (serialId: string, newTemporaryPass: strin
     saveUsers(users);
     return { success: true, message: 'تم إعادة تعيين كلمة المرور بنجاح' };
 }
+
+// --- NEW MANAGEMENT FUNCTIONS ---
+
+// 1. Remove Admin Privileges (Downgrade)
+export const removeAdminPrivileges = (serialId: string): { success: boolean, message?: string } => {
+    const users = getUsers();
+    const userIndex = users.findIndex(u => u.serialId === serialId);
+    
+    if (userIndex === -1) return { success: false, message: 'المستخدم غير موجود' };
+    if (users[userIndex].email === ADMIN_EMAIL) return { success: false, message: 'لا يمكن إزالة صلاحيات المالك' };
+
+    users[userIndex].isAdmin = false;
+    users[userIndex].permissions = undefined;
+
+    saveUsers(users);
+    return { success: true, message: 'تم سحب الصلاحيات وعاد الحساب إلى مستخدم عادي.' };
+};
+
+// 2. Delete User Permanently
+export const deleteUserPermanently = (serialId: string): { success: boolean, message?: string } => {
+    const users = getUsers();
+    const userIndex = users.findIndex(u => u.serialId === serialId);
+    
+    if (userIndex === -1) return { success: false, message: 'المستخدم غير موجود' };
+    if (users[userIndex].email === ADMIN_EMAIL) return { success: false, message: 'لا يمكن حذف المالك' };
+
+    const userId = users[userIndex].id;
+    
+    // Remove from Local Storage
+    const updatedUsers = users.filter(u => u.serialId !== serialId);
+    saveUsers(updatedUsers);
+
+    // Remove from Cloud if enabled
+    if (ENABLE_CLOUD_DB && db && isCloudHealthy) {
+        try {
+            deleteDoc(doc(db, "users", userId));
+        } catch(e) { handleCloudError(e, "Delete User"); }
+    }
+
+    return { success: true, message: 'تم حذف الحساب وجميع البيانات نهائياً.' };
+};
+
+// 3. Deactivate/Hide User (Soft Delete)
+export const toggleUserDeactivation = (serialId: string): { success: boolean, message?: string, isDeactivated?: boolean } => {
+    const users = getUsers();
+    const userIndex = users.findIndex(u => u.serialId === serialId);
+    
+    if (userIndex === -1) return { success: false, message: 'المستخدم غير موجود' };
+    if (users[userIndex].email === ADMIN_EMAIL) return { success: false, message: 'لا يمكن تعطيل المالك' };
+
+    const newState = !users[userIndex].isDeactivated;
+    users[userIndex].isDeactivated = newState;
+
+    saveUsers(users);
+    return { 
+        success: true, 
+        message: newState ? 'تم إغلاق الصفحة وتعطيل الحساب مؤقتاً.' : 'تم إعادة تنشيط الحساب والصفحة.',
+        isDeactivated: newState
+    };
+};
 
 export const initializeData = () => {
     if (!localStorage.getItem(VISITORS_KEY)) {

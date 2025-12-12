@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Coins, Plus, UserCheck, AlertCircle, Trash2, Ban, ShieldAlert, CheckCircle2, Eye, Clock, Lock, Users, Eraser, KeyRound } from 'lucide-react';
-import { getUserBySerial, updateUserBalance, zeroUserBalance, setUserBanStatus, getUsers, wipeUserBalances, adminResetUserPassword } from '../services/storageService';
+import { Search, Coins, Plus, UserCheck, AlertCircle, Trash2, Ban, ShieldAlert, CheckCircle2, Eye, Clock, Lock, Users, Eraser, KeyRound, EyeOff, Power } from 'lucide-react';
+import { getUserBySerial, updateUserBalance, zeroUserBalance, setUserBanStatus, getUsers, wipeUserBalances, adminResetUserPassword, deleteUserPermanently, toggleUserDeactivation } from '../services/storageService';
 import { User } from '../types';
 
 const AdminWallet: React.FC = () => {
@@ -123,8 +123,43 @@ const AdminWallet: React.FC = () => {
       }
   };
 
+  const handleDeleteAccount = () => {
+      if (!foundUser) return;
+      if (window.confirm(`🗑️ حذف الحساب نهائياً (إلغاء الاشتراك الكلي):\nهل أنت متأكد من حذف حساب ${foundUser.username} نهائياً؟\n\nالنتيجة: حذف جميع البيانات الشخصية، البريد، وسجل النشاطات. لا يمكن استرداد الحساب.`)) {
+          const result = deleteUserPermanently(foundUser.serialId);
+          if (result.success) {
+              setMessage({ type: 'success', text: result.message || 'تم حذف الحساب بنجاح' });
+              setFoundUser(null);
+              setSerialId('');
+          } else {
+              setMessage({ type: 'error', text: result.message || 'فشل الحذف' });
+          }
+      }
+  };
+
+  const handleDeactivate = () => {
+      if (!foundUser) return;
+      const isDeactivated = foundUser.isDeactivated;
+      
+      const confirmMsg = isDeactivated 
+        ? `🚪 إعادة تفعيل الصفحة:\nهل تريد إعادة إظهار وتنشيط حساب ${foundUser.username}؟`
+        : `🚪 إغلاق الصفحة/الملف الشخصي (التعطيل المؤقت):\nهل أنت متأكد من تعطيل حساب ${foundUser.username}؟\n\nالنتيجة: يتم إخفاء الملف الشخصي والأنشطة عن العرض العام، مع حفظ البيانات لاستعادتها لاحقاً.`;
+
+      if (window.confirm(confirmMsg)) {
+          const result = toggleUserDeactivation(foundUser.serialId);
+          if (result.success) {
+              setMessage({ type: 'success', text: result.message || 'تم تغيير الحالة' });
+              const updated = getUserBySerial(foundUser.serialId);
+              if (updated) setFoundUser(updated);
+          } else {
+               setMessage({ type: 'error', text: result.message || 'فشل الإجراء' });
+          }
+      }
+  };
+
   // Helper to get status display
   const getUserStatus = (user: User) => {
+      if (user.isDeactivated) return <span className="bg-slate-500 text-white text-xs px-2 py-0.5 rounded-full flex items-center gap-1"><EyeOff className="w-3 h-3" /> معطل (مخفي)</span>;
       if (user.isBanned) return <span className="bg-red-500 text-white text-xs px-2 py-0.5 rounded-full flex items-center gap-1"><Ban className="w-3 h-3" /> محظور نهائياً</span>;
       if (user.banExpiresAt && user.banExpiresAt > Date.now()) {
           const hoursLeft = Math.ceil((user.banExpiresAt - Date.now()) / (1000 * 60 * 60));
@@ -280,7 +315,7 @@ const AdminWallet: React.FC = () => {
                                 <ShieldAlert className="w-5 h-5" />
                                 نظام العقوبات والرقابة
                             </h4>
-                            <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+                            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
                                 <button 
                                     onClick={() => handleBanAction('24h')}
                                     className="bg-white border border-orange-200 text-orange-600 hover:bg-orange-50 py-3 rounded-lg text-sm font-bold flex flex-col items-center gap-1 shadow-sm"
@@ -317,9 +352,27 @@ const AdminWallet: React.FC = () => {
                                     فك الحظر
                                 </button>
                             </div>
-                            <p className="text-xs text-red-400 mt-3">
-                                * تعيين كلمة مرور: يتيح لك إنشاء كلمة مرور مؤقتة للمستخدم (مع إجباره على تغييرها لاحقاً).
-                            </p>
+
+                            {/* Advanced Account Management */}
+                            <div className="border-t border-red-100 pt-4 mt-4 grid grid-cols-2 gap-3">
+                                <button 
+                                    onClick={handleDeactivate}
+                                    className={`py-3 rounded-lg text-sm font-bold flex flex-col items-center gap-1 shadow-sm border
+                                        ${foundUser.isDeactivated 
+                                            ? 'bg-emerald-50 border-emerald-300 text-emerald-700' 
+                                            : 'bg-white border-slate-400 text-slate-600 hover:bg-slate-100'}`}
+                                >
+                                    {foundUser.isDeactivated ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
+                                    {foundUser.isDeactivated ? 'إعادة تنشيط الصفحة' : 'تعطيل الحساب (إخفاء)'}
+                                </button>
+                                <button 
+                                    onClick={handleDeleteAccount}
+                                    className="bg-red-600 border border-red-700 text-white hover:bg-red-700 py-3 rounded-lg text-sm font-bold flex flex-col items-center gap-1 shadow-sm"
+                                >
+                                    <Trash2 className="w-4 h-4" />
+                                    حذف الحساب نهائياً
+                                </button>
+                            </div>
                         </div>
                     </div>
                 ) : (

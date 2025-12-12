@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Users, UserPlus, Shield, Check, Lock, Mail, Trash2, Ban, CheckCircle2 } from 'lucide-react';
-import { getUsers, createSubAdmin, updateUserPermissions, toggleUserBan, getCurrentUser } from '../services/storageService';
+import { Users, UserPlus, Shield, Check, Lock, Mail, Trash2, Ban, CheckCircle2, UserMinus } from 'lucide-react';
+import { getUsers, createSubAdmin, updateUserPermissions, toggleUserBan, getCurrentUser, removeAdminPrivileges } from '../services/storageService';
 import { User, AdminPermissions } from '../types';
 
 const AdminTeamManagement: React.FC = () => {
@@ -65,6 +65,18 @@ const AdminTeamManagement: React.FC = () => {
           refreshAdmins();
       } else {
           alert(result.message || 'فشل الإجراء');
+      }
+  };
+
+  const handleDowngrade = (serialId: string) => {
+      if (window.confirm('🚫 إزالة صلاحيات المشرفين:\nهل أنت متأكد من سحب الصلاحيات الإدارية؟\n\nالنتيجة: سيعود الحساب إلى حالة "مستخدم مُسجَّل" قياسية، ويحتفظ بجميع بياناته الشخصية.')) {
+          const result = removeAdminPrivileges(serialId);
+          if (result.success) {
+              alert(result.message);
+              refreshAdmins();
+          } else {
+              alert(result.message);
+          }
       }
   };
 
@@ -239,15 +251,24 @@ const AdminTeamManagement: React.FC = () => {
                                         )}
                                     </td>
 
-                                    <td className="px-4 py-3 text-center">
+                                    <td className="px-4 py-3 text-center flex justify-center gap-2">
                                         {!isOwner && (
-                                            <button 
-                                                onClick={() => handleBan(admin.serialId)}
-                                                className={`p-2 rounded hover:bg-slate-200 transition-colors ${admin.isBanned ? 'text-green-600' : 'text-red-600'}`}
-                                                title={admin.isBanned ? 'رفع الحظر' : 'حظر الحساب'}
-                                            >
-                                                {admin.isBanned ? <CheckCircle2 className="w-5 h-5" /> : <Ban className="w-5 h-5" />}
-                                            </button>
+                                            <>
+                                                <button 
+                                                    onClick={() => handleDowngrade(admin.serialId)}
+                                                    className="p-2 rounded hover:bg-slate-200 transition-colors text-orange-600"
+                                                    title="إزالة الصلاحيات (Downgrade)"
+                                                >
+                                                    <UserMinus className="w-5 h-5" />
+                                                </button>
+                                                <button 
+                                                    onClick={() => handleBan(admin.serialId)}
+                                                    className={`p-2 rounded hover:bg-slate-200 transition-colors ${admin.isBanned ? 'text-green-600' : 'text-red-600'}`}
+                                                    title={admin.isBanned ? 'رفع الحظر' : 'حظر الحساب'}
+                                                >
+                                                    {admin.isBanned ? <CheckCircle2 className="w-5 h-5" /> : <Ban className="w-5 h-5" />}
+                                                </button>
+                                            </>
                                         )}
                                         {isOwner && <Lock className="w-4 h-4 text-slate-300 mx-auto" />}
                                     </td>

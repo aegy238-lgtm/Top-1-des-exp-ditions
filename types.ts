@@ -90,6 +90,7 @@ export interface User {
   isAdmin?: boolean; // New: Super Admin Flag
   permissions?: AdminPermissions; // New: Granular permissions for sub-admins
   mustChangePassword?: boolean; // New: Security flag to force password change on next login
+  isDeactivated?: boolean; // New: Soft delete / Hide profile
 }
 
 export type BannerStyle = 'promo' | 'info' | 'warning' | 'alert';
