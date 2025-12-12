@@ -26,13 +26,9 @@ const Sidebar: React.FC<SidebarProps> = ({
   const currentUser = getCurrentUser();
 
   const handleLogout = () => {
-    if (isAdmin) {
-      setIsAdmin(false);
-      setActiveView('new-order');
-    } else {
-      logoutUser();
-      onLogoutUser();
-    }
+    // Always log out completely to redirect to login page
+    logoutUser();
+    onLogoutUser();
   };
 
   // Helper to check permissions
