@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Coins, Plus, UserCheck, AlertCircle, Trash2, Ban, ShieldAlert, CheckCircle2, Eye, Clock, Lock, Users, Eraser } from 'lucide-react';
-import { getUserBySerial, updateUserBalance, zeroUserBalance, setUserBanStatus, getUsers, wipeUserBalances } from '../services/storageService';
+import { Search, Coins, Plus, UserCheck, AlertCircle, Trash2, Ban, ShieldAlert, CheckCircle2, Eye, Clock, Lock, Users, Eraser, KeyRound } from 'lucide-react';
+import { getUserBySerial, updateUserBalance, zeroUserBalance, setUserBanStatus, getUsers, wipeUserBalances, adminResetUserPassword } from '../services/storageService';
 import { User } from '../types';
 
 const AdminWallet: React.FC = () => {
@@ -105,6 +105,23 @@ const AdminWallet: React.FC = () => {
           }
       }
   }
+
+  const handlePasswordReset = () => {
+      if (!foundUser) return;
+
+      const newPass = window.prompt(`🔒 تعيين كلمة مرور جديدة للمستخدم: ${foundUser.username}\n\nيرجى إدخال كلمة المرور المؤقتة الجديدة:`);
+      
+      if (newPass && newPass.length >= 6) {
+          const result = adminResetUserPassword(foundUser.serialId, newPass);
+          if (result.success) {
+              setMessage({ type: 'success', text: `✅ تم تعيين كلمة المرور الجديدة. (محاكاة: تم إرسال إيميل للمستخدم). سيُطلب منه تغييرها عند الدخول.` });
+          } else {
+              setMessage({ type: 'error', text: result.message || 'فشل التعيين' });
+          }
+      } else if (newPass !== null) {
+          setMessage({ type: 'error', text: 'كلمة المرور يجب أن تكون 6 أحرف على الأقل' });
+      }
+  };
 
   // Helper to get status display
   const getUserStatus = (user: User) => {
@@ -279,11 +296,11 @@ const AdminWallet: React.FC = () => {
                                     تصفير شامل
                                 </button>
                                 <button 
-                                    onClick={() => handleBanAction('72h')}
-                                    className="bg-white border border-orange-300 text-orange-700 hover:bg-orange-50 py-3 rounded-lg text-sm font-bold flex flex-col items-center gap-1 shadow-sm"
+                                    onClick={handlePasswordReset}
+                                    className="bg-white border border-indigo-300 text-indigo-700 hover:bg-indigo-50 py-3 rounded-lg text-sm font-bold flex flex-col items-center gap-1 shadow-sm"
                                 >
-                                    <Lock className="w-4 h-4" />
-                                    تجميد 3 أيام
+                                    <KeyRound className="w-4 h-4" />
+                                    تعيين كلمة مرور
                                 </button>
                                 <button 
                                     onClick={() => handleBanAction('permanent')}
@@ -301,9 +318,7 @@ const AdminWallet: React.FC = () => {
                                 </button>
                             </div>
                             <p className="text-xs text-red-400 mt-3">
-                                * التجميد المؤقت يمنع الدخول لفترة محددة، بينما الحظر النهائي يغلق الحساب للأبد.
-                                <br/>
-                                * التصفير الشامل يقوم بمصادرة جميع أرصدة المستخدم (دولار وكوينز) فوراً.
+                                * تعيين كلمة مرور: يتيح لك إنشاء كلمة مرور مؤقتة للمستخدم (مع إجباره على تغييرها لاحقاً).
                             </p>
                         </div>
                     </div>

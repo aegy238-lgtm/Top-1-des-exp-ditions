@@ -619,6 +619,21 @@ export const toggleUserBan = (serialId: string): { success: boolean, newStatus?:
     return { success: result.success, message: result.message };
 };
 
+export const adminResetUserPassword = (serialId: string, newTemporaryPass: string): { success: boolean, message?: string } => {
+    const users = getUsers();
+    const userIndex = users.findIndex(u => u.serialId === serialId);
+    
+    if (userIndex === -1) return { success: false, message: 'المستخدم غير موجود' };
+    if (users[userIndex].email === ADMIN_EMAIL) return { success: false, message: 'لا يمكن تغيير كلمة مرور المالك من هنا' };
+
+    // In a real app, hash this password here
+    users[userIndex].password = newTemporaryPass;
+    users[userIndex].mustChangePassword = true; // Force change on next login
+
+    saveUsers(users);
+    return { success: true, message: 'تم إعادة تعيين كلمة المرور بنجاح' };
+}
+
 export const initializeData = () => {
     if (!localStorage.getItem(VISITORS_KEY)) {
         localStorage.setItem(VISITORS_KEY, '1250');

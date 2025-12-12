@@ -89,6 +89,7 @@ export interface User {
   banExpiresAt?: number; // New: Timestamp for temporary freeze expiration
   isAdmin?: boolean; // New: Super Admin Flag
   permissions?: AdminPermissions; // New: Granular permissions for sub-admins
+  mustChangePassword?: boolean; // New: Security flag to force password change on next login
 }
 
 export type BannerStyle = 'promo' | 'info' | 'warning' | 'alert';
