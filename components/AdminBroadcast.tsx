@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { Megaphone, Send, Users, BellRing, CheckCircle2 } from 'lucide-react';
-import { sendBroadcastNotification, getUsers } from '../services/storageService';
+import { Megaphone, Send, Users, BellRing, CheckCircle2, Trash2 } from 'lucide-react';
+import { sendBroadcastNotification, getUsers, wipeAllNotificationsGlobal } from '../services/storageService';
 
 const AdminBroadcast: React.FC = () => {
   const [title, setTitle] = useState('');
@@ -33,6 +33,19 @@ const AdminBroadcast: React.FC = () => {
     }
   };
 
+  const handleWipeNotifications = async () => {
+      if (window.confirm(`🔥 حذف سجل الإشعارات:\n\nهل أنت متأكد من حذف جميع الإشعارات السابقة من حسابات كل المستخدمين؟\n\nلن يرى أي مستخدم الإشعارات القديمة بعد الآن.`)) {
+          setLoading(true);
+          const result = await wipeAllNotificationsGlobal();
+          setLoading(false);
+          if (result.success) {
+              setFeedback({ type: 'success', text: result.message || 'تم حذف السجل بنجاح' });
+          } else {
+              setFeedback({ type: 'error', text: result.message || 'فشل الحذف' });
+          }
+      }
+  };
+
   return (
     <div className="max-w-4xl mx-auto animate-fade-in">
         <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
@@ -48,6 +61,16 @@ const AdminBroadcast: React.FC = () => {
                         <p className="text-slate-400 text-sm">إرسال تنبيهات أو أخبار لجميع المستخدمين دفعة واحدة</p>
                     </div>
                 </div>
+                
+                {/* Delete Button Header */}
+                <button 
+                    onClick={handleWipeNotifications}
+                    title="حذف جميع الإشعارات القديمة من النظام"
+                    className="bg-red-900/50 hover:bg-red-600 text-red-200 hover:text-white px-3 py-2 rounded-lg transition-colors flex items-center gap-2 text-xs font-bold border border-red-800"
+                >
+                    <Trash2 className="w-4 h-4" />
+                    <span className="hidden sm:inline">حذف أرشيف الإشعارات</span>
+                </button>
             </div>
 
             <div className="p-6 md:p-8 grid grid-cols-1 md:grid-cols-3 gap-8">
@@ -91,7 +114,7 @@ const AdminBroadcast: React.FC = () => {
                             className={`w-full py-4 rounded-xl font-bold text-white shadow-lg transition-all flex items-center justify-center gap-3
                                 ${loading ? 'bg-slate-400 cursor-not-allowed' : 'bg-pink-600 hover:bg-pink-700 hover:scale-[1.02]'}`}
                         >
-                            {loading ? 'جاري الإرسال...' : (
+                            {loading ? 'جاري التنفيذ...' : (
                                 <>
                                     <Send className="w-5 h-5" />
                                     إرسال للكل ({usersCount})
@@ -124,8 +147,9 @@ const AdminBroadcast: React.FC = () => {
                             </p>
                         </div>
 
-                        <div className="mt-6 text-xs text-slate-400 leading-relaxed text-center">
-                            ⚠️ تنبيه: عند الضغط على إرسال، سيتم إنشاء إشعار في حساب كل مستخدم فوراً. لا يمكن التراجع عن هذه العملية.
+                        <div className="mt-6 text-xs text-slate-400 leading-relaxed text-center space-y-2">
+                            <p>⚠️ تنبيه: عند الضغط على إرسال، سيتم إنشاء إشعار في حساب كل مستخدم فوراً.</p>
+                            <p className="text-red-400">🔥 زر الحذف في الأعلى يقوم بمسح جميع الإشعارات السابقة لجميع المستخدمين.</p>
                         </div>
                     </div>
                 </div>

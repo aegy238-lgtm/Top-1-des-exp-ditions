@@ -132,7 +132,7 @@ const App: React.FC = () => {
 
       // 2. System Notifications (Broadcasts from Admin)
       const sysNotifs: NotificationItem[] = systemNotifications
-        .filter(n => n.userId === currentUser.serialId && !n.isRead)
+        .filter(n => n.userId === currentUser.serialId && !n.isRead) // STRICT FILTER: Once read, it disappears from this list
         .map(n => ({
             id: n.id,
             message: n.message,
@@ -153,9 +153,12 @@ const App: React.FC = () => {
         updateOrder(notif.id, { isRead: true });
         setActiveView('user-history'); // Go to history to see full details
     } else {
+        // For system notifications, mark locally first for instant UI feedback (remove item)
+        // Then call storage update
+        setSystemNotifications(prev => prev.map(n => n.id === notif.id ? { ...n, isRead: true } : n));
         markNotificationAsRead(notif.id);
-        // Stay here or maybe show a modal with full text if it's long
     }
+    // Delay slightly to allow animation if needed, but here we want instant removal
     refreshData();
     setShowNotifications(false);
   };

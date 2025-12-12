@@ -857,6 +857,35 @@ export const sendBroadcastNotification = async (title: string, message: string):
     return { success: true, message: `تم إرسال الإشعار بنجاح إلى ${activeUsers.length} مستخدم` };
 };
 
+// NEW: Wipe All Notifications History (Admin Only)
+export const wipeAllNotificationsGlobal = async (): Promise<{ success: boolean, message?: string }> => {
+    const currentUser = getCurrentUser();
+    if (currentUser?.email !== ADMIN_EMAIL) {
+        return { success: false, message: 'غير مصرح لك بهذا الإجراء' };
+    }
+
+    // 1. Clear Local Storage
+    localStorage.removeItem(NOTIFICATIONS_KEY);
+
+    // 2. Clear Cloud (Firestore)
+    if (ENABLE_CLOUD_DB && db && isCloudHealthy) {
+        try {
+            const q = query(collection(db, "notifications"), limit(500));
+            const snapshot = await getDocs(q);
+            
+            if (!snapshot.empty) {
+                 const batch = writeBatch(db);
+                 snapshot.docs.forEach((doc) => {
+                     batch.delete(doc.ref);
+                 });
+                 await batch.commit();
+            }
+        } catch(e) { handleCloudError(e, "Global Wipe Notifications"); }
+    }
+
+    return { success: true, message: 'تم حذف أرشيف الإشعارات بالكامل لجميع المستخدمين.' };
+};
+
 export const markNotificationAsRead = async (notificationId: string) => {
     const notifications = getSystemNotifications();
     const index = notifications.findIndex(n => n.id === notificationId);
