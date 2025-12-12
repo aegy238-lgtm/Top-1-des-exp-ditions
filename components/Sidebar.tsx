@@ -108,20 +108,21 @@ const Sidebar: React.FC<SidebarProps> = ({
             </>
           )}
 
-          <div className="pt-4 pb-2">
-            <p className="px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">الإدارة</p>
-          </div>
-
-          <button
-            onClick={() => { setActiveView('dashboard'); setIsOpen(false); }}
-            className={`flex items-center w-full px-4 py-3 text-start rounded-lg transition-colors ${activeView === 'dashboard' ? 'bg-emerald-600 text-white' : 'text-slate-300 hover:bg-slate-800'}`}
-          >
-            <LayoutDashboard className="w-5 h-5 ml-3" />
-            <span>لوحة التحكم</span>
-          </button>
-
+          {/* ADMIN ONLY SECTION - Hidden for regular users */}
           {isAdmin && (
             <>
+              <div className="pt-4 pb-2">
+                <p className="px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">الإدارة</p>
+              </div>
+
+              <button
+                onClick={() => { setActiveView('dashboard'); setIsOpen(false); }}
+                className={`flex items-center w-full px-4 py-3 text-start rounded-lg transition-colors ${activeView === 'dashboard' ? 'bg-emerald-600 text-white' : 'text-slate-300 hover:bg-slate-800'}`}
+              >
+                <LayoutDashboard className="w-5 h-5 ml-3" />
+                <span>لوحة التحكم</span>
+              </button>
+
               <button
                 onClick={() => { setActiveView('admin-orders'); setIsOpen(false); }}
                 className={`flex items-center w-full px-4 py-3 text-start rounded-lg transition-colors ${activeView === 'admin-orders' ? 'bg-emerald-600 text-white' : 'text-slate-300 hover:bg-slate-800'}`}

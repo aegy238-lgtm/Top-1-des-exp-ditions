@@ -214,25 +214,25 @@ const NewOrderForm: React.FC<NewOrderFormProps> = ({ onOrderSuccess }) => {
       <div className="bg-white rounded-2xl shadow-xl border border-slate-100 overflow-hidden">
         
         {/* Header */}
-        <div className="bg-slate-900 p-6 flex items-center justify-between">
+        <div className="bg-slate-900 p-4 md:p-6 flex items-center justify-between">
             <div className="flex items-center gap-3">
                 <div className="p-2 bg-emerald-500 rounded-lg shadow-lg shadow-emerald-500/20">
-                    <Zap className="w-6 h-6 text-white" />
+                    <Zap className="w-5 h-5 md:w-6 md:h-6 text-white" />
                 </div>
-                <h2 className="text-xl font-bold text-white">بدء طلب شحن</h2>
+                <h2 className="text-lg md:text-xl font-bold text-white">بدء طلب شحن</h2>
             </div>
             {isAgencyConnected && (
-                <div className="hidden md:flex items-center gap-2 bg-slate-800 px-3 py-1 rounded-full border border-slate-700">
+                <div className="flex items-center gap-2 bg-slate-800 px-2 md:px-3 py-1 rounded-full border border-slate-700">
                     <span className="relative flex h-2 w-2">
                       <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
                       <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
                     </span>
-                    <span className="text-xs text-slate-300 font-medium">الشحن الفوري مفعل</span>
+                    <span className="text-[10px] md:text-xs text-slate-300 font-medium hidden sm:inline">الشحن الفوري مفعل</span>
                 </div>
             )}
         </div>
 
-        <div className="p-8">
+        <div className="p-4 md:p-8">
             {/* Loading Overlay */}
             {loading && processingState !== 'idle' && (
                 <div className="absolute inset-0 bg-white/90 z-50 flex flex-col items-center justify-center animate-fade-in rounded-2xl">
@@ -261,10 +261,10 @@ const NewOrderForm: React.FC<NewOrderFormProps> = ({ onOrderSuccess }) => {
                 </div>
             )}
 
-            <form onSubmit={handleSubmit} className="space-y-6">
+            <form onSubmit={handleSubmit} className="space-y-5 md:space-y-6">
                 
                 {/* User Info Section */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
                     <div className="space-y-2">
                         <label className="text-sm font-bold text-slate-700 flex items-center gap-2">
                             <User className="w-4 h-4 text-emerald-500" />
@@ -273,7 +273,7 @@ const NewOrderForm: React.FC<NewOrderFormProps> = ({ onOrderSuccess }) => {
                         <input
                             type="text"
                             required
-                            className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100 outline-none transition-all font-medium"
+                            className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100 outline-none transition-all font-medium text-sm md:text-base"
                             placeholder="Example Name"
                             value={formData.username}
                             onChange={(e) => setFormData({ ...formData, username: e.target.value })}
@@ -288,7 +288,7 @@ const NewOrderForm: React.FC<NewOrderFormProps> = ({ onOrderSuccess }) => {
                         <input
                             type="text"
                             required
-                            className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100 outline-none transition-all font-mono"
+                            className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100 outline-none transition-all font-mono text-sm md:text-base"
                             placeholder="12345678"
                             value={formData.userId}
                             onChange={(e) => setFormData({ ...formData, userId: e.target.value })}
@@ -305,7 +305,7 @@ const NewOrderForm: React.FC<NewOrderFormProps> = ({ onOrderSuccess }) => {
                     <div className="relative">
                         <select
                             required
-                            className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100 outline-none transition-all appearance-none bg-white"
+                            className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100 outline-none transition-all appearance-none bg-white text-sm md:text-base"
                             value={formData.appName}
                             onChange={handleAppChange}
                         >
@@ -326,7 +326,7 @@ const NewOrderForm: React.FC<NewOrderFormProps> = ({ onOrderSuccess }) => {
                 </div>
 
                 {/* Amount & Calculation */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
                      <div className="space-y-2">
                         <label className="text-sm font-bold text-slate-700 flex items-center gap-2">
                             <CreditCard className="w-4 h-4 text-emerald-500" />
@@ -361,20 +361,20 @@ const NewOrderForm: React.FC<NewOrderFormProps> = ({ onOrderSuccess }) => {
                 {/* Payment Method Toggle */}
                 <div className="pt-4 border-t border-slate-100">
                     <label className="text-sm font-bold text-slate-700 mb-4 block">طريقة الدفع</label>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 md:gap-4">
                         <button
                             type="button"
                             onClick={() => setPaymentMethod(PaymentMethod.WALLET)}
-                            className={`p-4 rounded-xl border-2 transition-all flex items-center gap-3 relative overflow-hidden
+                            className={`p-3 md:p-4 rounded-xl border-2 transition-all flex items-center gap-3 relative overflow-hidden
                                 ${paymentMethod === PaymentMethod.WALLET 
                                     ? 'border-emerald-500 bg-emerald-50/50' 
                                     : 'border-slate-100 hover:border-slate-200'}`}
                         >
-                            <div className={`p-2 rounded-full ${paymentMethod === PaymentMethod.WALLET ? 'bg-emerald-500 text-white' : 'bg-slate-100 text-slate-400'}`}>
-                                <Wallet className="w-6 h-6" />
+                            <div className={`p-2 rounded-full flex-shrink-0 ${paymentMethod === PaymentMethod.WALLET ? 'bg-emerald-500 text-white' : 'bg-slate-100 text-slate-400'}`}>
+                                <Wallet className="w-5 h-5 md:w-6 md:h-6" />
                             </div>
-                            <div className="text-right">
-                                <span className={`block font-bold ${paymentMethod === PaymentMethod.WALLET ? 'text-emerald-800' : 'text-slate-600'}`}>رصيد المحفظة</span>
+                            <div className="text-right flex-1">
+                                <span className={`block font-bold text-sm md:text-base ${paymentMethod === PaymentMethod.WALLET ? 'text-emerald-800' : 'text-slate-600'}`}>رصيد المحفظة</span>
                                 <span className="text-xs text-slate-500">الخصم المباشر من حسابك</span>
                             </div>
                             {paymentMethod === PaymentMethod.WALLET && (
@@ -387,16 +387,16 @@ const NewOrderForm: React.FC<NewOrderFormProps> = ({ onOrderSuccess }) => {
                         <button
                             type="button"
                             onClick={() => setPaymentMethod(PaymentMethod.AGENT)}
-                            className={`p-4 rounded-xl border-2 transition-all flex items-center gap-3 relative overflow-hidden
+                            className={`p-3 md:p-4 rounded-xl border-2 transition-all flex items-center gap-3 relative overflow-hidden
                                 ${paymentMethod === PaymentMethod.AGENT 
                                     ? 'border-green-500 bg-green-50/50' 
                                     : 'border-slate-100 hover:border-slate-200'}`}
                         >
-                            <div className={`p-2 rounded-full ${paymentMethod === PaymentMethod.AGENT ? 'bg-green-500 text-white' : 'bg-slate-100 text-slate-400'}`}>
-                                <Smartphone className="w-6 h-6" />
+                            <div className={`p-2 rounded-full flex-shrink-0 ${paymentMethod === PaymentMethod.AGENT ? 'bg-green-500 text-white' : 'bg-slate-100 text-slate-400'}`}>
+                                <Smartphone className="w-5 h-5 md:w-6 md:h-6" />
                             </div>
-                            <div className="text-right">
-                                <span className={`block font-bold ${paymentMethod === PaymentMethod.AGENT ? 'text-green-800' : 'text-slate-600'}`}>عبر الوكيل</span>
+                            <div className="text-right flex-1">
+                                <span className={`block font-bold text-sm md:text-base ${paymentMethod === PaymentMethod.AGENT ? 'text-green-800' : 'text-slate-600'}`}>عبر الوكيل</span>
                                 <span className="text-xs text-slate-500">تحويل بنكي / فودافون كاش</span>
                             </div>
                             {paymentMethod === PaymentMethod.AGENT && (
@@ -420,7 +420,7 @@ const NewOrderForm: React.FC<NewOrderFormProps> = ({ onOrderSuccess }) => {
                          <button
                             type="submit"
                             disabled={loading}
-                            className={`w-full py-4 rounded-xl font-bold text-lg text-white shadow-xl shadow-emerald-200 transition-all transform hover:-translate-y-1 active:translate-y-0 flex items-center justify-center gap-3
+                            className={`w-full py-3 md:py-4 rounded-xl font-bold text-base md:text-lg text-white shadow-xl shadow-emerald-200 transition-all transform hover:-translate-y-1 active:translate-y-0 flex items-center justify-center gap-3
                                 ${loading ? 'bg-slate-400 cursor-not-allowed' : 'bg-emerald-600 hover:bg-emerald-700'}`}
                         >
                             {loading ? (
@@ -437,7 +437,7 @@ const NewOrderForm: React.FC<NewOrderFormProps> = ({ onOrderSuccess }) => {
                             <button
                                 type="submit"
                                 disabled={loading}
-                                className={`w-full py-4 rounded-xl font-bold text-lg text-white shadow-xl shadow-green-200 transition-all transform hover:-translate-y-1 active:translate-y-0 flex items-center justify-center gap-3
+                                className={`w-full py-3 md:py-4 rounded-xl font-bold text-base md:text-lg text-white shadow-xl shadow-green-200 transition-all transform hover:-translate-y-1 active:translate-y-0 flex items-center justify-center gap-3
                                     ${loading ? 'bg-slate-400 cursor-not-allowed' : 'bg-[#25D366] hover:bg-[#128C7E]'}`}
                             >
                                 <Smartphone className="w-6 h-6" />
@@ -449,7 +449,7 @@ const NewOrderForm: React.FC<NewOrderFormProps> = ({ onOrderSuccess }) => {
                                 <button
                                     type="button"
                                     onClick={() => window.open(generateWhatsAppLink(contactConfig.secondaryPhone!), '_blank')}
-                                    className="w-full py-3 rounded-xl font-bold text-slate-600 border-2 border-slate-200 hover:bg-slate-50 transition-all"
+                                    className="w-full py-3 rounded-xl font-bold text-slate-600 border-2 border-slate-200 hover:bg-slate-50 transition-all text-sm md:text-base"
                                 >
                                     تواصل مع الوكيل 2
                                 </button>
@@ -458,7 +458,7 @@ const NewOrderForm: React.FC<NewOrderFormProps> = ({ onOrderSuccess }) => {
                                 <button
                                     type="button"
                                     onClick={() => window.open(generateWhatsAppLink(contactConfig.tertiaryPhone!), '_blank')}
-                                    className="w-full py-3 rounded-xl font-bold text-slate-600 border-2 border-slate-200 hover:bg-slate-50 transition-all"
+                                    className="w-full py-3 rounded-xl font-bold text-slate-600 border-2 border-slate-200 hover:bg-slate-50 transition-all text-sm md:text-base"
                                 >
                                     تواصل مع الوكيل 3
                                 </button>

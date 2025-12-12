@@ -48,19 +48,19 @@ const UserAuth: React.FC<UserAuthProps> = ({ onSuccess }) => {
   };
 
   return (
-    <div className="max-w-md mx-auto w-full">
+    <div className="max-w-md mx-auto w-full px-2 md:px-0">
       <div className="bg-white rounded-2xl shadow-xl border border-slate-100 overflow-hidden">
         {/* Header */}
-        <div className="bg-slate-900 p-8 text-center">
-          <h2 className="text-2xl font-bold text-white mb-2">
+        <div className="bg-slate-900 p-6 md:p-8 text-center">
+          <h2 className="text-xl md:text-2xl font-bold text-white mb-2">
             {isLogin ? 'تسجيل الدخول' : 'إنشاء حساب جديد'}
           </h2>
-          <p className="text-slate-400 text-sm">
+          <p className="text-slate-400 text-xs md:text-sm">
             {isLogin ? `أهلاً بك مجدداً في ${siteName}` : 'انضم إلينا واحصل على رقم تسلسلي خاص'}
           </p>
         </div>
 
-        <div className="p-8">
+        <div className="p-6 md:p-8">
           <form onSubmit={handleSubmit} className="space-y-4">
             {!isLogin && (
               <div className="space-y-2">
@@ -70,7 +70,7 @@ const UserAuth: React.FC<UserAuthProps> = ({ onSuccess }) => {
                   <input
                     type="text"
                     required={!isLogin}
-                    className="w-full pr-10 pl-4 py-3 rounded-xl border border-slate-200 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 outline-none transition-all"
+                    className="w-full pr-10 pl-4 py-3 rounded-xl border border-slate-200 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 outline-none transition-all text-sm md:text-base"
                     placeholder="الاسم الكامل"
                     value={formData.username}
                     onChange={(e) => setFormData({...formData, username: e.target.value})}
@@ -86,7 +86,7 @@ const UserAuth: React.FC<UserAuthProps> = ({ onSuccess }) => {
                 <input
                   type="email"
                   required
-                  className="w-full pr-10 pl-4 py-3 rounded-xl border border-slate-200 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 outline-none transition-all"
+                  className="w-full pr-10 pl-4 py-3 rounded-xl border border-slate-200 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 outline-none transition-all text-sm md:text-base"
                   placeholder="name@example.com"
                   value={formData.email}
                   onChange={(e) => setFormData({...formData, email: e.target.value})}
@@ -101,7 +101,7 @@ const UserAuth: React.FC<UserAuthProps> = ({ onSuccess }) => {
                 <input
                   type="password"
                   required
-                  className="w-full pr-10 pl-4 py-3 rounded-xl border border-slate-200 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 outline-none transition-all"
+                  className="w-full pr-10 pl-4 py-3 rounded-xl border border-slate-200 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 outline-none transition-all text-sm md:text-base"
                   placeholder="********"
                   value={formData.password}
                   onChange={(e) => setFormData({...formData, password: e.target.value})}
@@ -117,7 +117,7 @@ const UserAuth: React.FC<UserAuthProps> = ({ onSuccess }) => {
 
             <button
               type="submit"
-              className="w-full py-4 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold shadow-lg shadow-emerald-200 transition-all flex items-center justify-center gap-2"
+              className="w-full py-3 md:py-4 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold shadow-lg shadow-emerald-200 transition-all flex items-center justify-center gap-2"
             >
               {isLogin ? (
                 <>

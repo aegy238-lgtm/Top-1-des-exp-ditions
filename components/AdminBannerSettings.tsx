@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Megaphone, Save, Eye, EyeOff, LayoutTemplate } from 'lucide-react';
+import { Megaphone, Save, Eye, EyeOff, LayoutTemplate, Image } from 'lucide-react';
 import { getBannerConfig, saveBannerConfig } from '../services/storageService';
 import { BannerConfig, BannerStyle } from '../types';
 
@@ -8,7 +8,8 @@ const AdminBannerSettings: React.FC = () => {
       isVisible: true,
       title: '',
       message: '',
-      style: 'promo'
+      style: 'promo',
+      iconUrl: ''
   });
 
   useEffect(() => {
@@ -67,6 +68,23 @@ const AdminBannerSettings: React.FC = () => {
                     </div>
                 ))}
             </div>
+        </div>
+
+        {/* Custom Icon/Image */}
+        <div>
+            <label className="block text-sm font-medium text-slate-700 mb-2 flex items-center gap-2">
+                <Image className="w-4 h-4 text-slate-400" />
+                رابط صورة/أيقونة مخصصة (اختياري)
+            </label>
+            <input 
+                type="text" 
+                className="w-full px-4 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-purple-200 focus:border-purple-500 outline-none text-left"
+                placeholder="https://example.com/my-icon.png"
+                value={config.iconUrl || ''}
+                onChange={(e) => setConfig({...config, iconUrl: e.target.value})}
+                dir="ltr"
+            />
+            <p className="text-xs text-slate-400 mt-1">سيتم استبدال أيقونة الميكروفون/التنبيه الافتراضية بهذه الصورة في حال توفر الرابط.</p>
         </div>
 
         {/* Content */}

@@ -46,8 +46,12 @@ const HeroBanner: React.FC = () => {
         <div className="absolute -right-10 -top-10 w-40 h-40 bg-white opacity-10 rounded-full blur-3xl"></div>
         
         <div className="relative z-10 flex flex-col md:flex-row items-center gap-5 text-center md:text-right">
-            <div className="p-3 bg-white/20 rounded-xl backdrop-blur-sm shadow-inner">
-                {getIcon(config.style)}
+            <div className="p-3 bg-white/20 rounded-xl backdrop-blur-sm shadow-inner overflow-hidden">
+                {config.iconUrl ? (
+                   <img src={config.iconUrl} alt="Banner Icon" className="w-8 h-8 object-contain" />
+                ) : (
+                   getIcon(config.style)
+                )}
             </div>
             <div className="flex-1">
                 <h2 className="text-2xl font-black mb-2 tracking-tight">{config.title}</h2>

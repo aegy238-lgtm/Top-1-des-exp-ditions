@@ -89,6 +89,7 @@ export interface BannerConfig {
   title: string;
   message: string;
   style: BannerStyle;
+  iconUrl?: string; // Optional custom icon URL
 }
 
 export interface SiteConfig {

@@ -12,16 +12,17 @@ const RecentOrders: React.FC<RecentOrdersProps> = ({ orders }) => {
         <h3 className="text-lg font-bold text-slate-800">أحدث الطلبات</h3>
       </div>
       
+      {/* Scrollable Container for Mobile */}
       <div className="overflow-x-auto">
-        <table className="w-full text-right">
+        <table className="w-full text-right min-w-[700px]">
           <thead className="bg-slate-50 text-slate-500 text-sm">
             <tr>
-              <th className="px-6 py-3 font-medium">اسم المستخدم</th>
-              <th className="px-6 py-3 font-medium">الآيدي (ID)</th>
-              <th className="px-6 py-3 font-medium">التطبيق</th>
-              <th className="px-6 py-3 font-medium">المبلغ</th>
-              <th className="px-6 py-3 font-medium">الحالة</th>
-              <th className="px-6 py-3 font-medium">التاريخ</th>
+              <th className="px-4 py-3 md:px-6 font-medium">اسم المستخدم</th>
+              <th className="px-4 py-3 md:px-6 font-medium">الآيدي (ID)</th>
+              <th className="px-4 py-3 md:px-6 font-medium">التطبيق</th>
+              <th className="px-4 py-3 md:px-6 font-medium">المبلغ</th>
+              <th className="px-4 py-3 md:px-6 font-medium">الحالة</th>
+              <th className="px-4 py-3 md:px-6 font-medium">التاريخ</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
@@ -34,13 +35,13 @@ const RecentOrders: React.FC<RecentOrdersProps> = ({ orders }) => {
             ) : (
               orders.map((order) => (
                 <tr key={order.id} className="hover:bg-slate-50 transition-colors">
-                  <td className="px-6 py-4 text-slate-700 font-medium">{order.username}</td>
-                  <td className="px-6 py-4 text-slate-500 font-mono text-sm">{order.userId}</td>
-                  <td className="px-6 py-4 text-slate-600">{order.appName}</td>
-                  <td className="px-6 py-4 text-slate-800 font-bold">
+                  <td className="px-4 py-3 md:px-6 md:py-4 text-slate-700 font-medium">{order.username}</td>
+                  <td className="px-4 py-3 md:px-6 md:py-4 text-slate-500 font-mono text-sm">{order.userId}</td>
+                  <td className="px-4 py-3 md:px-6 md:py-4 text-slate-600">{order.appName}</td>
+                  <td className="px-4 py-3 md:px-6 md:py-4 text-slate-800 font-bold">
                     {order.amount} <span className="text-xs text-slate-500 font-normal">{order.currency}</span>
                   </td>
-                  <td className="px-6 py-4">
+                  <td className="px-4 py-3 md:px-6 md:py-4">
                     <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
                       ${order.status === OrderStatus.COMPLETED ? 'bg-green-100 text-green-800' : 
                         order.status === OrderStatus.PENDING ? 'bg-yellow-100 text-yellow-800' : 
@@ -48,7 +49,7 @@ const RecentOrders: React.FC<RecentOrdersProps> = ({ orders }) => {
                       {order.status}
                     </span>
                   </td>
-                  <td className="px-6 py-4 text-slate-500 text-sm">
+                  <td className="px-4 py-3 md:px-6 md:py-4 text-slate-500 text-sm">
                     {new Date(order.date).toLocaleDateString('ar-EG')}
                   </td>
                 </tr>

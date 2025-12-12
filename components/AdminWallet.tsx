@@ -74,19 +74,19 @@ const AdminWallet: React.FC = () => {
   return (
     <div className="max-w-4xl mx-auto animate-fade-in">
       <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
-        <div className="bg-slate-900 p-6 flex items-center gap-3">
+        <div className="bg-slate-900 p-4 md:p-6 flex items-center gap-3">
           <div className="p-2 bg-emerald-500 rounded-lg">
              <Coins className="w-6 h-6 text-white" />
           </div>
           <div>
-            <h2 className="text-xl font-bold text-white">إدارة أرصدة المستخدمين</h2>
-            <p className="text-slate-400 text-sm">بحث عن مستخدم وإضافة رصيد (كوينز / دولار)</p>
+            <h2 className="text-lg md:text-xl font-bold text-white">إدارة أرصدة المستخدمين</h2>
+            <p className="text-slate-400 text-xs md:text-sm">بحث عن مستخدم وإضافة رصيد (كوينز / دولار)</p>
           </div>
         </div>
 
-        <div className="p-8">
+        <div className="p-4 md:p-8">
             {/* Search Section */}
-            <div className="flex gap-4 mb-8">
+            <div className="flex flex-col sm:flex-row gap-4 mb-8">
                 <div className="flex-1 relative">
                     <Search className="w-5 h-5 text-slate-400 absolute right-3 top-3.5" />
                     <input 
@@ -99,7 +99,7 @@ const AdminWallet: React.FC = () => {
                 </div>
                 <button 
                     onClick={handleSearch}
-                    className="bg-slate-800 hover:bg-slate-700 text-white px-6 rounded-xl font-bold transition-colors"
+                    className="bg-slate-800 hover:bg-slate-700 text-white px-6 py-3 rounded-xl font-bold transition-colors w-full sm:w-auto"
                 >
                     بحث
                 </button>
@@ -107,35 +107,35 @@ const AdminWallet: React.FC = () => {
 
             {/* User Details & Action */}
             {foundUser && (
-                <div className="bg-slate-50 border border-slate-200 rounded-xl p-6 animate-fade-in">
-                    <div className="flex items-center gap-4 mb-6 pb-6 border-b border-slate-200">
-                        <div className={`w-16 h-16 rounded-full flex items-center justify-center 
+                <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 md:p-6 animate-fade-in">
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 mb-6 pb-6 border-b border-slate-200">
+                        <div className={`w-16 h-16 rounded-full flex items-center justify-center flex-shrink-0
                             ${foundUser.isBanned ? 'bg-red-100 text-red-600' : 'bg-emerald-100 text-emerald-700'}`}>
                             {foundUser.isBanned ? <Ban className="w-8 h-8" /> : <UserCheck className="w-8 h-8" />}
                         </div>
-                        <div>
+                        <div className="w-full">
                             <h3 className="text-lg font-bold text-slate-800 flex items-center gap-2">
                                 {foundUser.username}
                                 {foundUser.isBanned && <span className="bg-red-500 text-white text-xs px-2 py-0.5 rounded-full">محظور</span>}
                             </h3>
-                            <div className="flex gap-4 mt-1 text-sm text-slate-600">
-                                <span className="flex items-center gap-1 bg-white px-2 py-1 rounded border">
+                            <div className="flex flex-col sm:flex-row gap-2 sm:gap-4 mt-2 text-sm text-slate-600">
+                                <span className="flex items-center gap-1 bg-white px-2 py-1 rounded border w-fit">
                                     <span className="font-bold">ID:</span> {foundUser.serialId}
                                 </span>
-                                <span className="flex items-center gap-1 bg-white px-2 py-1 rounded border">
+                                <span className="flex items-center gap-1 bg-white px-2 py-1 rounded border w-fit truncate max-w-full">
                                     <span className="font-bold">البريد:</span> {foundUser.email}
                                 </span>
                             </div>
                         </div>
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-8">
                         <div className="bg-white p-4 rounded-lg border border-slate-200 flex justify-between items-center">
-                            <span className="text-slate-500">رصيد الدولار</span>
+                            <span className="text-slate-500 text-sm">رصيد الدولار</span>
                             <span className="text-xl font-bold text-green-600">${foundUser.balanceUSD.toFixed(2)}</span>
                         </div>
                         <div className="bg-white p-4 rounded-lg border border-slate-200 flex justify-between items-center">
-                            <span className="text-slate-500">رصيد الكوينز</span>
+                            <span className="text-slate-500 text-sm">رصيد الكوينز</span>
                             <span className="text-xl font-bold text-yellow-600">{foundUser.balanceCoins} 🪙</span>
                         </div>
                     </div>
@@ -168,7 +168,7 @@ const AdminWallet: React.FC = () => {
                              <button 
                                 type="submit"
                                 disabled={foundUser.isBanned ?? false}
-                                className={`font-bold rounded-lg flex items-center justify-center gap-2 transition-colors
+                                className={`font-bold rounded-lg flex items-center justify-center gap-2 transition-colors py-3
                                     ${foundUser.isBanned 
                                         ? 'bg-slate-300 cursor-not-allowed text-slate-500' 
                                         : 'bg-emerald-600 hover:bg-emerald-700 text-white'}`}
@@ -181,29 +181,29 @@ const AdminWallet: React.FC = () => {
 
                     {/* Danger Zone */}
                     <div className="border-t border-slate-200 pt-6 mt-6">
-                        <h4 className="font-bold text-slate-800 mb-4 flex items-center gap-2">
+                        <h4 className="font-bold text-slate-800 mb-4 flex items-center gap-2 text-sm md:text-base">
                             <ShieldAlert className="w-5 h-5 text-red-500" />
                             إجراءات الحساب (منطقة الخطر)
                         </h4>
-                        <div className="flex flex-wrap gap-4">
+                        <div className="flex flex-col sm:flex-row flex-wrap gap-3">
                             <button 
                                 onClick={() => handleZeroBalance('USD')}
-                                className="px-4 py-2 bg-white text-red-600 border border-red-200 rounded-lg hover:bg-red-50 font-bold text-sm flex items-center gap-2 transition-colors"
+                                className="px-4 py-3 sm:py-2 bg-white text-red-600 border border-red-200 rounded-lg hover:bg-red-50 font-bold text-sm flex items-center justify-center gap-2 transition-colors w-full sm:w-auto"
                             >
                                 <Trash2 className="w-4 h-4" />
                                 تصفير رصيد الدولار ($)
                             </button>
                             <button 
                                 onClick={() => handleZeroBalance('COINS')}
-                                className="px-4 py-2 bg-white text-amber-600 border border-amber-200 rounded-lg hover:bg-amber-50 font-bold text-sm flex items-center gap-2 transition-colors"
+                                className="px-4 py-3 sm:py-2 bg-white text-amber-600 border border-amber-200 rounded-lg hover:bg-amber-50 font-bold text-sm flex items-center justify-center gap-2 transition-colors w-full sm:w-auto"
                             >
                                 <Trash2 className="w-4 h-4" />
                                 تصفير رصيد الكوينز (🪙)
                             </button>
-                            <div className="w-px h-8 bg-slate-300 mx-2 hidden md:block self-center"></div>
+                            <div className="w-px h-8 bg-slate-300 mx-2 hidden sm:block self-center"></div>
                             <button 
                                 onClick={handleBanToggle}
-                                className={`px-4 py-2 rounded-lg text-white font-bold text-sm flex items-center gap-2 transition-colors
+                                className={`px-4 py-3 sm:py-2 rounded-lg text-white font-bold text-sm flex items-center justify-center gap-2 transition-colors w-full sm:w-auto
                                     ${foundUser.isBanned 
                                         ? 'bg-emerald-600 hover:bg-emerald-700' 
                                         : 'bg-slate-800 hover:bg-slate-900'}`}
