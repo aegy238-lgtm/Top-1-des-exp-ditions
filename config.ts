@@ -16,6 +16,7 @@ export const GLOBAL_CONTACT_CONFIG: ContactConfig = {
 // 2. إعدادات البانر الإعلاني (الشريط العلوي)
 export const GLOBAL_BANNER_CONFIG: BannerConfig = {
     isVisible: true,
+    showText: true,
     title: 'تنبيه هام! 🚀',
     message: 'تم تحديث أرقام الواتساب والأسعار. يرجى التأكد من البيانات قبل التحويل.',
     style: 'warning' // خيارات: 'promo' (بنفسجي), 'info' (أزرق), 'warning' (برتقالي), 'alert' (أحمر)

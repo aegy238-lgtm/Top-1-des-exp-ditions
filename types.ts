@@ -69,6 +69,13 @@ export interface AgencyConfig {
   lastSync: number | null;
 }
 
+export interface AdminPermissions {
+    canManageOrders: boolean;
+    canManageWallet: boolean;
+    canManageSettings: boolean; // Covers Banner, Apps, Contact, General, Agency
+    canManageTeam: boolean; // Only Super Admin usually
+}
+
 export interface User {
   id: string; // UUID
   serialId: string; // The sequential ID (e.g., 10001)
@@ -78,18 +85,22 @@ export interface User {
   balanceUSD: number;
   balanceCoins: number;
   createdAt: number;
-  isBanned?: boolean; // New: Ban status
+  isBanned?: boolean; // Permanent Ban status
+  banExpiresAt?: number; // New: Timestamp for temporary freeze expiration
   isAdmin?: boolean; // New: Super Admin Flag
+  permissions?: AdminPermissions; // New: Granular permissions for sub-admins
 }
 
 export type BannerStyle = 'promo' | 'info' | 'warning' | 'alert';
 
 export interface BannerConfig {
   isVisible: boolean;
+  showText: boolean; // New: Toggle text visibility
   title: string;
   message: string;
   style: BannerStyle;
-  iconUrl?: string; // Optional custom icon URL
+  iconUrl?: string; // Optional custom icon URL (small icon)
+  backgroundUrl?: string; // New: Full background image URL
 }
 
 export interface SiteConfig {

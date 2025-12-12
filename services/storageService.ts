@@ -1,4 +1,4 @@
-import { Order, OrderStatus, DashboardStats, AgencyConfig, User, PaymentMethod, BannerConfig, AppConfig, ContactConfig, SiteConfig } from '../types';
+import { Order, OrderStatus, DashboardStats, AgencyConfig, User, PaymentMethod, BannerConfig, AppConfig, ContactConfig, SiteConfig, AdminPermissions } from '../types';
 import { GLOBAL_APPS_CONFIG, GLOBAL_BANNER_CONFIG, GLOBAL_CONTACT_CONFIG } from '../config';
 import { firebaseConfig, ENABLE_CLOUD_DB } from '../firebaseConfig';
 import { initializeApp } from 'firebase/app';
@@ -43,7 +43,6 @@ if (ENABLE_CLOUD_DB) {
 // Helper: Handle Cloud Errors gracefully
 const handleCloudError = (e: any, context: string) => {
     console.error(`Cloud Error (${context}):`, e);
-    // If DB doesn't exist or permission denied, stop trying to sync to prevent lag
     if (e.code === 'not-found' || e.message?.includes('not exist') || e.code === 'permission-denied') {
         if (isCloudHealthy) {
             console.warn(`⚠️ Stopping Cloud Sync due to critical error: ${context}. App switching to Local Mode.`);
@@ -91,25 +90,21 @@ const syncUsersFromCloud = async () => {
 const syncSettingsFromCloud = async () => {
     if (!db || !isCloudHealthy) return;
     try {
-        // 1. Sync Banner
         const bannerSnap = await getDoc(doc(db, "settings", "banner"));
         if (bannerSnap.exists()) {
             localStorage.setItem(BANNER_CONFIG_KEY, JSON.stringify(bannerSnap.data()));
         }
 
-        // 2. Sync Apps
         const appsSnap = await getDoc(doc(db, "settings", "apps"));
         if (appsSnap.exists()) {
             localStorage.setItem(APPS_CONFIG_KEY, JSON.stringify(appsSnap.data().list));
         }
 
-        // 3. Sync Contact
         const contactSnap = await getDoc(doc(db, "settings", "contact"));
         if (contactSnap.exists()) {
             localStorage.setItem(CONTACT_CONFIG_KEY, JSON.stringify(contactSnap.data()));
         }
 
-        // 4. Sync Site Info
         const siteSnap = await getDoc(doc(db, "settings", "site"));
         if (siteSnap.exists()) {
             localStorage.setItem(SITE_CONFIG_KEY, JSON.stringify(siteSnap.data()));
@@ -124,7 +119,6 @@ const syncSettingsFromCloud = async () => {
 let lastSyncTime = 0;
 
 export const getOrders = (): Order[] => {
-  // 1. Return Local Data Immediately (Fast)
   let localOrders: Order[] = [];
   try {
     const data = localStorage.getItem(ORDERS_KEY);
@@ -133,28 +127,24 @@ export const getOrders = (): Order[] => {
     localOrders = [];
   }
 
-  // 2. Background Sync (Every 5 seconds max)
   const now = Date.now();
   if (ENABLE_CLOUD_DB && db && isCloudHealthy && (now - lastSyncTime > 5000)) {
       lastSyncTime = now;
       syncOrdersFromCloud(); 
       syncUsersFromCloud();
-      syncSettingsFromCloud(); // Sync settings as well
+      syncSettingsFromCloud();
   }
 
   return localOrders;
 };
 
 export const saveOrder = async (order: Order): Promise<void> => {
-  // 1. Save Local
-  const orders = getOrders(); // This gets local
+  const orders = getOrders();
   const updatedOrders = [order, ...orders];
   localStorage.setItem(ORDERS_KEY, JSON.stringify(updatedOrders));
 
-  // 2. Save Cloud
   if (ENABLE_CLOUD_DB && db && isCloudHealthy) {
       try {
-          // Use order ID as document ID to prevent duplicates
           await setDoc(doc(db, "orders", order.id), order);
       } catch (e) {
           handleCloudError(e, "Save Order");
@@ -163,7 +153,6 @@ export const saveOrder = async (order: Order): Promise<void> => {
 };
 
 export const updateOrder = async (orderId: string, updates: Partial<Order>): Promise<boolean> => {
-    // 1. Update Local
     const orders = getOrders();
     const index = orders.findIndex(o => o.id === orderId);
     if (index === -1) return false;
@@ -171,7 +160,6 @@ export const updateOrder = async (orderId: string, updates: Partial<Order>): Pro
     orders[index] = { ...orders[index], ...updates };
     localStorage.setItem(ORDERS_KEY, JSON.stringify(orders));
 
-    // 2. Update Cloud
     if (ENABLE_CLOUD_DB && db && isCloudHealthy) {
         try {
             const orderRef = doc(db, "orders", orderId);
@@ -295,7 +283,6 @@ export const saveAppConfigs = async (apps: AppConfig[]): Promise<void> => {
     localStorage.setItem(APPS_CONFIG_KEY, JSON.stringify(apps));
     if (ENABLE_CLOUD_DB && db && isCloudHealthy) {
         try {
-            // Save as an object containing the list
             await setDoc(doc(db, "settings", "apps"), { list: apps });
         } catch(e) { handleCloudError(e, "Save App Configs"); }
     }
@@ -326,14 +313,11 @@ export const getUsers = (): User[] => {
 };
 
 export const saveUsers = async (users: User[]) => {
-    // Local
     localStorage.setItem(USERS_KEY, JSON.stringify(users));
     
-    // Cloud (Sync all - simplified for this use case, ideally only changed user)
     if (ENABLE_CLOUD_DB && db && isCloudHealthy) {
         users.forEach(async (u) => {
             try {
-                // Don't save the hardcoded admin to cloud database to keep it secret/local logic
                 if (u.email !== ADMIN_EMAIL) {
                      await setDoc(doc(db, "users", u.id), u);
                 }
@@ -370,15 +354,56 @@ export const registerUser = (email: string, password: string, username: string):
   };
 
   users.push(newUser);
-  saveUsers(users); // Syncs to cloud
+  saveUsers(users); 
   
   localStorage.setItem(CURRENT_USER_KEY, JSON.stringify(newUser));
 
   return { success: true, user: newUser };
 };
 
+export const createSubAdmin = (email: string, password: string, username: string, permissions: AdminPermissions): { success: boolean, message?: string } => {
+    if (email === ADMIN_EMAIL) {
+        return { success: false, message: 'لا يمكن استخدام بريد المالك' };
+    }
+    const users = getUsers();
+    if (users.find(u => u.email === email)) {
+        return { success: false, message: 'البريد الإلكتروني مستخدم بالفعل' };
+    }
+
+    const lastSerial = users.length > 0 ? Math.max(...users.map(u => parseInt(u.serialId))) : 10000;
+
+    const newAdmin: User = {
+        id: Math.random().toString(36).substr(2, 9),
+        serialId: (lastSerial + 1).toString(),
+        email,
+        password,
+        username,
+        balanceUSD: 0,
+        balanceCoins: 0,
+        createdAt: Date.now(),
+        isBanned: false,
+        isAdmin: true,
+        permissions: permissions
+    };
+
+    users.push(newAdmin);
+    saveUsers(users);
+    return { success: true };
+};
+
+export const updateUserPermissions = (userId: string, permissions: AdminPermissions): boolean => {
+    const users = getUsers();
+    const index = users.findIndex(u => u.id === userId);
+    if (index === -1) return false;
+    if (users[index].email === ADMIN_EMAIL) return false;
+
+    users[index].permissions = permissions;
+    saveUsers(users);
+    return true;
+}
+
 export const loginUser = (email: string, password: string): { success: boolean, message?: string, user?: User } => {
-  // 1. Check for Super Admin
+  // 1. Check for Super Admin (Owner)
   if (email === ADMIN_EMAIL && password === ADMIN_PASS) {
       const adminUser: User = {
           id: 'SUPER_ADMIN',
@@ -390,13 +415,19 @@ export const loginUser = (email: string, password: string): { success: boolean, 
           balanceCoins: 999999,
           createdAt: Date.now(),
           isBanned: false,
-          isAdmin: true // Special Flag
+          isAdmin: true,
+          permissions: {
+              canManageOrders: true,
+              canManageWallet: true,
+              canManageSettings: true,
+              canManageTeam: true
+          }
       };
       localStorage.setItem(CURRENT_USER_KEY, JSON.stringify(adminUser));
       return { success: true, user: adminUser };
   }
 
-  // 2. Check Regular Users
+  // 2. Check Regular Users / Sub-Admins
   const users = getUsers();
   const user = users.find(u => u.email === email && u.password === password);
 
@@ -404,8 +435,25 @@ export const loginUser = (email: string, password: string): { success: boolean, 
     return { success: false, message: 'بيانات الدخول غير صحيحة' };
   }
 
+  // 3. CHECK BAN STATUS (Flexible System)
   if (user.isBanned) {
-      return { success: false, message: 'عذراً، تم حظر حسابك من قبل الإدارة. يرجى التواصل مع الدعم.' };
+      return { success: false, message: '⛔ عذراً، تم حظر حسابك نهائياً من قبل الإدارة لمخالفة القوانين.' };
+  }
+
+  if (user.banExpiresAt && user.banExpiresAt > Date.now()) {
+      const expireDate = new Date(user.banExpiresAt).toLocaleDateString('ar-EG');
+      const expireTime = new Date(user.banExpiresAt).toLocaleTimeString('ar-EG');
+      return { success: false, message: `⏳ حسابك مجمد مؤقتاً حتى ${expireDate} الساعة ${expireTime}.` };
+  }
+
+  // If freeze expired, clear it
+  if (user.banExpiresAt && user.banExpiresAt <= Date.now()) {
+      user.banExpiresAt = undefined;
+      const index = users.findIndex(u => u.id === user.id);
+      if (index !== -1) {
+          users[index] = user;
+          saveUsers(users);
+      }
   }
 
   localStorage.setItem(CURRENT_USER_KEY, JSON.stringify(user));
@@ -417,17 +465,21 @@ export const getCurrentUser = (): User | null => {
     const data = localStorage.getItem(CURRENT_USER_KEY);
     if (data) {
         const sessionUser = JSON.parse(data);
-        
-        // If it's the admin, return immediately
-        if (sessionUser.isAdmin) return sessionUser;
+        if (sessionUser.email === ADMIN_EMAIL) return sessionUser;
 
         const allUsers = getUsers();
-        // Sync check: ensure session user matches latest data
         const freshUser = allUsers.find(u => u.id === sessionUser.id);
         
-        if (freshUser && freshUser.isBanned) {
-            localStorage.removeItem(CURRENT_USER_KEY);
-            return null;
+        if (freshUser) {
+            // Check Ban/Freeze on every refresh
+            if (freshUser.isBanned) {
+                localStorage.removeItem(CURRENT_USER_KEY);
+                return null;
+            }
+            if (freshUser.banExpiresAt && freshUser.banExpiresAt > Date.now()) {
+                 localStorage.removeItem(CURRENT_USER_KEY);
+                 return null;
+            }
         }
 
         return freshUser || sessionUser;
@@ -447,7 +499,6 @@ export const updateCurrentSession = (user: User) => {
 }
 
 export const updateUserProfile = (userId: string, newUsername: string): { success: boolean, message?: string } => {
-    // Prevent updating Admin profile via normal user flow
     const currentUser = getCurrentUser();
     if (currentUser && currentUser.isAdmin) {
          return { success: true, message: 'لا يمكن تعديل بيانات المدير الأساسية من هنا' };
@@ -460,7 +511,7 @@ export const updateUserProfile = (userId: string, newUsername: string): { succes
 
     users[userIndex].username = newUsername;
 
-    saveUsers(users); // Cloud Sync
+    saveUsers(users); 
     updateCurrentSession(users[userIndex]); 
 
     return { success: true, message: 'تم تحديث الاسم بنجاح' };
@@ -483,7 +534,7 @@ export const updateUserBalance = (serialId: string, type: 'USD' | 'COINS', amoun
         users[userIndex].balanceCoins += amount;
     }
 
-    saveUsers(users); // Cloud Sync
+    saveUsers(users); 
     return true;
 }
 
@@ -498,7 +549,7 @@ export const deductUserBalance = (userId: string, amount: number): { success: bo
     }
 
     users[userIndex].balanceUSD -= amount;
-    saveUsers(users); // Cloud Sync
+    saveUsers(users); 
     updateCurrentSession(users[userIndex]);
 
     return { success: true };
@@ -514,22 +565,58 @@ export const zeroUserBalance = (serialId: string, type: 'USD' | 'COINS'): boolea
     } else {
         users[userIndex].balanceCoins = 0;
     }
-    saveUsers(users); // Cloud Sync
+    saveUsers(users); 
     return true;
 };
 
-export const toggleUserBan = (serialId: string): { success: boolean, newStatus?: boolean } => {
+export const wipeUserBalances = (serialId: string): boolean => {
+    const users = getUsers();
+    const userIndex = users.findIndex(u => u.serialId === serialId);
+    if (userIndex === -1) return false;
+    
+    users[userIndex].balanceUSD = 0;
+    users[userIndex].balanceCoins = 0;
+    saveUsers(users); 
+    return true;
+};
+
+// --- NEW ADVANCED BAN SYSTEM ---
+// Type: 'none' (Unban), 'permanent' (Full Ban), 'temporary' (Freeze)
+export const setUserBanStatus = (serialId: string, type: 'none' | 'permanent' | 'temporary', durationHours?: number): { success: boolean, message?: string } => {
     const users = getUsers();
     const userIndex = users.findIndex(u => u.serialId === serialId);
     
-    if (userIndex === -1) return { success: false };
+    if (userIndex === -1) return { success: false, message: 'المستخدم غير موجود' };
 
-    // Toggle ban status
-    const currentStatus = users[userIndex].isBanned || false;
-    users[userIndex].isBanned = !currentStatus;
+    if (users[userIndex].email === ADMIN_EMAIL) {
+        return { success: false, message: '⛔ لا يمكن حظر مالك الموقع!' };
+    }
 
-    saveUsers(users); // Cloud Sync
-    return { success: true, newStatus: !currentStatus };
+    const user = users[userIndex];
+
+    if (type === 'permanent') {
+        user.isBanned = true;
+        user.banExpiresAt = undefined;
+    } else if (type === 'temporary') {
+        if (!durationHours) durationHours = 24; // Default 24h
+        user.isBanned = false;
+        user.banExpiresAt = Date.now() + (durationHours * 60 * 60 * 1000);
+    } else {
+        // Unban
+        user.isBanned = false;
+        user.banExpiresAt = undefined;
+    }
+
+    users[userIndex] = user;
+    saveUsers(users);
+    return { success: true };
+}
+
+// Deprecated: Kept for backward compatibility if needed, maps to new system
+export const toggleUserBan = (serialId: string): { success: boolean, newStatus?: boolean, message?: string } => {
+    const result = setUserBanStatus(serialId, 'permanent'); 
+    // This logic is slightly flawed for toggle, but main UI now uses setUserBanStatus
+    return { success: result.success, message: result.message };
 };
 
 export const initializeData = () => {

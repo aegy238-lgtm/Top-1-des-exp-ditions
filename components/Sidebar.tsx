@@ -1,5 +1,5 @@
 import React from 'react';
-import { LayoutDashboard, PlusCircle, LogOut, Package, Link2, Coins, UserCircle, Settings, MessageSquare, History } from 'lucide-react';
+import { LayoutDashboard, PlusCircle, LogOut, Package, Link2, Coins, UserCircle, Settings, MessageSquare, History, Users } from 'lucide-react';
 import { getCurrentUser, logoutUser } from '../services/storageService';
 
 interface SidebarProps {
@@ -35,6 +35,16 @@ const Sidebar: React.FC<SidebarProps> = ({
     }
   };
 
+  // Helper to check permissions
+  // If user is owner (isAdmin + canManageTeam), they see everything.
+  // Otherwise check specific permission flag.
+  const perms = currentUser?.permissions || { 
+      canManageOrders: false, 
+      canManageWallet: false, 
+      canManageSettings: false, 
+      canManageTeam: false 
+  };
+
   return (
     <>
       {/* Mobile overlay */}
@@ -62,6 +72,23 @@ const Sidebar: React.FC<SidebarProps> = ({
               <div className="overflow-hidden">
                 <p className="text-sm font-bold text-white truncate w-32">{currentUser.username}</p>
                 <p className="text-xs text-emerald-400 font-mono">ID: {currentUser.serialId}</p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Admin Info Snippet */}
+        {isAdmin && currentUser && (
+          <div className="p-4 border-b border-slate-800 bg-indigo-900/20">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-indigo-600 flex items-center justify-center text-white font-bold text-lg">
+                {currentUser.username.charAt(0)}
+              </div>
+              <div className="overflow-hidden">
+                <p className="text-sm font-bold text-white truncate w-32">{currentUser.username}</p>
+                <p className="text-xs text-indigo-300 font-mono">
+                    {perms.canManageTeam ? 'Super Admin' : 'Admin'}
+                </p>
               </div>
             </div>
           </div>
@@ -108,13 +135,14 @@ const Sidebar: React.FC<SidebarProps> = ({
             </>
           )}
 
-          {/* ADMIN ONLY SECTION - Hidden for regular users */}
+          {/* ADMIN ONLY SECTION */}
           {isAdmin && (
             <>
               <div className="pt-4 pb-2">
                 <p className="px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">الإدارة</p>
               </div>
 
+              {/* Dashboard is visible to all admins, but content inside might be limited later if needed */}
               <button
                 onClick={() => { setActiveView('dashboard'); setIsOpen(false); }}
                 className={`flex items-center w-full px-4 py-3 text-start rounded-lg transition-colors ${activeView === 'dashboard' ? 'bg-emerald-600 text-white' : 'text-slate-300 hover:bg-slate-800'}`}
@@ -123,29 +151,50 @@ const Sidebar: React.FC<SidebarProps> = ({
                 <span>لوحة التحكم</span>
               </button>
 
-              <button
-                onClick={() => { setActiveView('admin-orders'); setIsOpen(false); }}
-                className={`flex items-center w-full px-4 py-3 text-start rounded-lg transition-colors ${activeView === 'admin-orders' ? 'bg-emerald-600 text-white' : 'text-slate-300 hover:bg-slate-800'}`}
-              >
-                <MessageSquare className="w-5 h-5 ml-3" />
-                <span>طلبات الشحن</span>
-              </button>
+              {/* Orders Permission */}
+              {perms.canManageOrders && (
+                  <button
+                    onClick={() => { setActiveView('admin-orders'); setIsOpen(false); }}
+                    className={`flex items-center w-full px-4 py-3 text-start rounded-lg transition-colors ${activeView === 'admin-orders' ? 'bg-emerald-600 text-white' : 'text-slate-300 hover:bg-slate-800'}`}
+                  >
+                    <MessageSquare className="w-5 h-5 ml-3" />
+                    <span>طلبات الشحن</span>
+                  </button>
+              )}
 
-              <button
-                onClick={() => { setActiveView('admin-wallet'); setIsOpen(false); }}
-                className={`flex items-center w-full px-4 py-3 text-start rounded-lg transition-colors ${activeView === 'admin-wallet' ? 'bg-emerald-600 text-white' : 'text-slate-300 hover:bg-slate-800'}`}
-              >
-                <Coins className="w-5 h-5 ml-3" />
-                <span>إدارة الأرصدة</span>
-              </button>
+              {/* Wallet Permission */}
+              {perms.canManageWallet && (
+                  <button
+                    onClick={() => { setActiveView('admin-wallet'); setIsOpen(false); }}
+                    className={`flex items-center w-full px-4 py-3 text-start rounded-lg transition-colors ${activeView === 'admin-wallet' ? 'bg-emerald-600 text-white' : 'text-slate-300 hover:bg-slate-800'}`}
+                  >
+                    <Coins className="w-5 h-5 ml-3" />
+                    <span>إدارة الأرصدة</span>
+                  </button>
+              )}
 
-              <button
-                onClick={() => { setActiveView('agency-integration'); setIsOpen(false); }}
-                className={`flex items-center w-full px-4 py-3 text-start rounded-lg transition-colors ${activeView === 'agency-integration' ? 'bg-emerald-600 text-white' : 'text-slate-300 hover:bg-slate-800'}`}
-              >
-                <Link2 className="w-5 h-5 ml-3" />
-                <span>ربط وكالة الشحن</span>
-              </button>
+              {/* Settings Permission (Agency, etc) */}
+              {perms.canManageSettings && (
+                  <button
+                    onClick={() => { setActiveView('agency-integration'); setIsOpen(false); }}
+                    className={`flex items-center w-full px-4 py-3 text-start rounded-lg transition-colors ${activeView === 'agency-integration' ? 'bg-emerald-600 text-white' : 'text-slate-300 hover:bg-slate-800'}`}
+                  >
+                    <Link2 className="w-5 h-5 ml-3" />
+                    <span>ربط وكالة الشحن</span>
+                  </button>
+              )}
+
+              {/* TEAM Permission (SUPER ADMIN ONLY) */}
+              {perms.canManageTeam && (
+                  <button
+                    onClick={() => { setActiveView('admin-team'); setIsOpen(false); }}
+                    className={`flex items-center w-full px-4 py-3 text-start rounded-lg transition-colors ${activeView === 'admin-team' ? 'bg-emerald-600 text-white' : 'text-slate-300 hover:bg-slate-800'}`}
+                  >
+                    <Users className="w-5 h-5 ml-3" />
+                    <span>إدارة فريق العمل</span>
+                  </button>
+              )}
+
             </>
           )}
         </nav>

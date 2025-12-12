@@ -11,6 +11,7 @@ import UserProfile from './components/UserProfile';
 import UserHistory from './components/UserHistory';
 import AdminWallet from './components/AdminWallet';
 import AdminOrders from './components/AdminOrders';
+import AdminTeamManagement from './components/AdminTeamManagement';
 import HeroBanner from './components/HeroBanner';
 import AdminBannerSettings from './components/AdminBannerSettings';
 import AdminAppsSettings from './components/AdminAppsSettings';
@@ -23,7 +24,7 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 // Initialize dummy data
 initializeData();
 
-type ViewState = 'dashboard' | 'new-order' | 'agency-integration' | 'user-auth' | 'admin-wallet' | 'user-profile' | 'admin-orders' | 'user-history';
+type ViewState = 'dashboard' | 'new-order' | 'agency-integration' | 'user-auth' | 'admin-wallet' | 'user-profile' | 'admin-orders' | 'user-history' | 'admin-team';
 
 const App: React.FC = () => {
   const [activeView, setActiveView] = useState<ViewState>('new-order');
@@ -145,8 +146,12 @@ const App: React.FC = () => {
     );
   }
 
-  // Helper to allow admin bypass or require secondary auth for sensitive areas (optional, currently bypassing if isAdmin)
+  // Helper to allow admin bypass or require secondary auth for sensitive areas
   const isAuthorizedAdmin = isAuthenticatedAdmin || currentUser?.isAdmin;
+  
+  // Permission checks
+  const canManageSettings = currentUser?.permissions?.canManageSettings;
+  const canManageTeam = currentUser?.permissions?.canManageTeam;
 
   // --- MAIN APP (AUTHENTICATED) ---
   return (
@@ -182,6 +187,7 @@ const App: React.FC = () => {
                activeView === 'agency-integration' ? 'الوكالة' :
                activeView === 'admin-wallet' ? 'الأرصدة' :
                activeView === 'admin-orders' ? 'الطلبات' :
+               activeView === 'admin-team' ? 'فريق العمل' :
                activeView === 'user-auth' ? 'دخول' : 
                activeView === 'user-profile' ? 'حسابي' : 
                activeView === 'user-history' ? 'سجلي' : ''}
@@ -279,6 +285,19 @@ const App: React.FC = () => {
              </div>
           )}
 
+          {/* ADMIN TEAM MANAGEMENT VIEW */}
+          {activeView === 'admin-team' && (
+             !isAuthorizedAdmin ? (
+               <LoginForm onLogin={() => setIsAuthenticatedAdmin(true)} />
+             ) : (
+                canManageTeam ? (
+                  <AdminTeamManagement />
+                ) : (
+                  <div className="p-10 text-center text-red-500 font-bold">عذراً، لا تملك صلاحية الوصول لهذه الصفحة.</div>
+                )
+             )
+          )}
+
           {/* ADMIN WALLET VIEW */}
           {activeView === 'admin-wallet' && (
              !isAuthorizedAdmin ? (
@@ -345,12 +364,21 @@ const App: React.FC = () => {
                         </div>
                     </div>
 
+                    {/* ONLY SHOW SETTINGS IF PERMISSION GRANTED */}
                     <div className="space-y-6">
-                        {/* Admin Settings Components */}
-                        <AdminGeneralSettings />
-                        <AdminContactSettings />
-                        <AdminAppsSettings />
-                        <AdminBannerSettings />
+                        {canManageSettings ? (
+                            <>
+                                <AdminGeneralSettings />
+                                <AdminContactSettings />
+                                <AdminAppsSettings />
+                                <AdminBannerSettings />
+                            </>
+                        ) : (
+                            <div className="bg-slate-50 border border-slate-200 rounded-xl p-8 text-center text-slate-500">
+                                <span className="block mb-2 text-2xl">🔒</span>
+                                لا تملك صلاحية الوصول لإعدادات الموقع
+                            </div>
+                        )}
                     </div>
                 </div>
               </div>
@@ -362,7 +390,11 @@ const App: React.FC = () => {
              !isAuthorizedAdmin ? (
                 <LoginForm onLogin={() => setIsAuthenticatedAdmin(true)} />
              ) : (
-                <AgencyIntegration />
+                canManageSettings ? (
+                  <AgencyIntegration />
+                ) : (
+                  <div className="p-10 text-center text-red-500 font-bold">عذراً، لا تملك صلاحية الوصول لهذه الصفحة.</div>
+                )
              )
           )}
 
