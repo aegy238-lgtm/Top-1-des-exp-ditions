@@ -17,7 +17,7 @@ const SITE_CONFIG_KEY = 'haneen_site_config';
 const NOTIFICATIONS_KEY = 'haneen_notifications';
 
 // --- Super Admin Credentials ---
-const ADMIN_EMAIL = 'admin@haneen.com';
+export const ADMIN_EMAIL = 'admin@haneen.com'; // Exported to be used in checks
 const ADMIN_PASS = 'zxcvbnmn123';
 
 // --- Default Site Config ---
@@ -616,6 +616,73 @@ export const wipeUserBalances = (serialId: string): boolean => {
     saveUsers(users); 
     return true;
 };
+
+// --- GLOBAL COIN WIPE (Super Admin Only) ---
+export const wipeAllCoinsGlobal = async (): Promise<{ success: boolean, message?: string }> => {
+    const currentUser = getCurrentUser();
+    if (currentUser?.email !== ADMIN_EMAIL) {
+        return { success: false, message: 'غير مصرح لك بهذا الإجراء' };
+    }
+
+    const users = getUsers();
+    
+    // Set all coins to 0 for all users
+    const updatedUsers = users.map(u => ({
+        ...u,
+        balanceCoins: 0
+    }));
+    
+    saveUsers(updatedUsers);
+    
+    // Batch update for Cloud
+    if (ENABLE_CLOUD_DB && db && isCloudHealthy) {
+        try {
+            const batch = writeBatch(db);
+            const batchList = updatedUsers.slice(0, 490);
+            
+            batchList.forEach(u => {
+                 if (u.id && u.id !== 'SUPER_ADMIN') {
+                     const ref = doc(db, "users", u.id);
+                     batch.update(ref, { balanceCoins: 0 });
+                 }
+            });
+            await batch.commit();
+        } catch(e) { handleCloudError(e, "Global Wipe Coins"); }
+    }
+
+    return { success: true, message: 'تم تصفير كوينزات جميع المستخدمين بنجاح.' };
+};
+
+// --- NEW: GLOBAL ORDER HISTORY WIPE (Super Admin Only) ---
+export const wipeAllOrdersGlobal = async (): Promise<{ success: boolean, message?: string }> => {
+    const currentUser = getCurrentUser();
+    if (currentUser?.email !== ADMIN_EMAIL) {
+        return { success: false, message: 'غير مصرح لك بهذا الإجراء' };
+    }
+
+    // 1. Clear Local Storage
+    localStorage.removeItem(ORDERS_KEY);
+
+    // 2. Clear Cloud (Firestore)
+    if (ENABLE_CLOUD_DB && db && isCloudHealthy) {
+        try {
+            // Firestore doesn't support deleting a whole collection directly in web SDK easily.
+            // We have to fetch and delete in batches.
+            const q = query(collection(db, "orders"), limit(500)); // Limit to prevent timeout, might need loops for huge DB
+            const snapshot = await getDocs(q);
+            
+            if (!snapshot.empty) {
+                 const batch = writeBatch(db);
+                 snapshot.docs.forEach((doc) => {
+                     batch.delete(doc.ref);
+                 });
+                 await batch.commit();
+            }
+        } catch(e) { handleCloudError(e, "Global Wipe Orders"); }
+    }
+
+    return { success: true, message: 'تم حذف سجل الطلبات بالكامل بنجاح.' };
+}
 
 // --- NEW ADVANCED BAN SYSTEM ---
 export const setUserBanStatus = (serialId: string, type: 'none' | 'permanent' | 'temporary', durationHours?: number): { success: boolean, message?: string } => {

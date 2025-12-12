@@ -1,6 +1,6 @@
 import React from 'react';
-import { LayoutDashboard, PlusCircle, LogOut, Package, Link2, Coins, UserCircle, Settings, MessageSquare, History, Users, Megaphone } from 'lucide-react';
-import { getCurrentUser, logoutUser } from '../services/storageService';
+import { LayoutDashboard, PlusCircle, LogOut, Package, Link2, Coins, UserCircle, Settings, MessageSquare, History, Users, Megaphone, Eraser, AlertOctagon } from 'lucide-react';
+import { getCurrentUser, logoutUser, ADMIN_EMAIL } from '../services/storageService';
 
 interface SidebarProps {
   activeView: string;
@@ -42,6 +42,8 @@ const Sidebar: React.FC<SidebarProps> = ({
       canManageSettings: false, 
       canManageTeam: false 
   };
+  
+  const isSuperAdmin = currentUser?.email === ADMIN_EMAIL;
 
   return (
     <>
@@ -178,7 +180,7 @@ const Sidebar: React.FC<SidebarProps> = ({
                   </button>
               )}
 
-              {/* Broadcast Permission (Usually Orders or Settings or Team) - Let's use Orders or Team logic, or make it available to all admins */}
+              {/* Broadcast Permission */}
               <button
                 onClick={() => { setActiveView('admin-broadcast'); setIsOpen(false); }}
                 className={`flex items-center w-full px-4 py-3 text-start rounded-lg transition-colors ${activeView === 'admin-broadcast' ? 'bg-emerald-600 text-white' : 'text-slate-300 hover:bg-slate-800'}`}
@@ -206,6 +208,18 @@ const Sidebar: React.FC<SidebarProps> = ({
                   >
                     <Users className="w-5 h-5 ml-3" />
                     <span>إدارة فريق العمل</span>
+                  </button>
+              )}
+              
+              {/* DEDICATED SUPER ADMIN BUTTON: Global Wipe */}
+              {isSuperAdmin && (
+                  <button
+                    onClick={() => { setActiveView('admin-global-control'); setIsOpen(false); }}
+                    className={`flex items-center w-full px-4 py-3 text-start rounded-lg transition-all border border-red-900/50 mt-4 
+                        ${activeView === 'admin-global-control' ? 'bg-red-600 text-white shadow-lg shadow-red-900/50' : 'bg-red-900/20 text-red-300 hover:bg-red-900/40 hover:text-white'}`}
+                  >
+                    <AlertOctagon className="w-5 h-5 ml-3" />
+                    <span>منطقة الخطر (Global)</span>
                   </button>
               )}
 

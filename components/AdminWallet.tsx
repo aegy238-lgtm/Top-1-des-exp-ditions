@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Coins, Plus, UserCheck, AlertCircle, Trash2, Ban, ShieldAlert, CheckCircle2, Eye, Clock, Lock, Users, Eraser, KeyRound, EyeOff, Power } from 'lucide-react';
-import { getUserBySerial, updateUserBalance, zeroUserBalance, setUserBanStatus, getUsers, wipeUserBalances, adminResetUserPassword, deleteUserPermanently, toggleUserDeactivation } from '../services/storageService';
+import { Search, Coins, Plus, UserCheck, AlertCircle, Trash2, Ban, ShieldAlert, CheckCircle2, Eye, Clock, Users, Eraser, KeyRound, EyeOff } from 'lucide-react';
+import { getUserBySerial, updateUserBalance, zeroUserBalance, setUserBanStatus, getUsers, wipeUserBalances, adminResetUserPassword, deleteUserPermanently, toggleUserDeactivation, getCurrentUser } from '../services/storageService';
 import { User } from '../types';
 
 const AdminWallet: React.FC = () => {
@@ -12,7 +12,7 @@ const AdminWallet: React.FC = () => {
   const [recentUsers, setRecentUsers] = useState<User[]>([]);
 
   useEffect(() => {
-    // Load recent users to "Identify" them (as per request)
+    // Load recent users to "Identify" them
     const allUsers = getUsers().filter(u => !u.isAdmin).slice(-10).reverse(); // Last 10 registered
     setRecentUsers(allUsers);
   }, []);
