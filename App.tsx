@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Menu, Bell, Sparkles, MessageCircle, Package } from 'lucide-react';
+import { Menu, Bell, Sparkles, MessageCircle, Package, Info, Megaphone } from 'lucide-react';
 import Sidebar from './components/Sidebar';
 import StatsCards from './components/StatsCards';
 import RecentOrders from './components/RecentOrders';
@@ -12,29 +12,40 @@ import UserHistory from './components/UserHistory';
 import AdminWallet from './components/AdminWallet';
 import AdminOrders from './components/AdminOrders';
 import AdminTeamManagement from './components/AdminTeamManagement';
+import AdminBroadcast from './components/AdminBroadcast';
 import HeroBanner from './components/HeroBanner';
 import AdminBannerSettings from './components/AdminBannerSettings';
 import AdminAppsSettings from './components/AdminAppsSettings';
 import AdminContactSettings from './components/AdminContactSettings';
 import AdminGeneralSettings from './components/AdminGeneralSettings';
-import { getOrders, getStats, initializeData, getCurrentUser, updateOrder, logoutUser, getSiteConfig } from './services/storageService';
-import { Order, DashboardStats, SiteConfig } from './types';
+import { getOrders, getStats, initializeData, getCurrentUser, updateOrder, logoutUser, getSiteConfig, getSystemNotifications, markNotificationAsRead } from './services/storageService';
+import { Order, DashboardStats, SiteConfig, SystemNotification } from './types';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
 // Initialize dummy data
 initializeData();
 
-type ViewState = 'dashboard' | 'new-order' | 'agency-integration' | 'user-auth' | 'admin-wallet' | 'user-profile' | 'admin-orders' | 'user-history' | 'admin-team';
+type ViewState = 'dashboard' | 'new-order' | 'agency-integration' | 'user-auth' | 'admin-wallet' | 'user-profile' | 'admin-orders' | 'user-history' | 'admin-team' | 'admin-broadcast';
+
+interface NotificationItem {
+    id: string;
+    message: string;
+    timestamp: number;
+    isRead: boolean;
+    type: 'order' | 'system';
+    title?: string; // Optional title for system notifications
+}
 
 const App: React.FC = () => {
   const [activeView, setActiveView] = useState<ViewState>('new-order');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [orders, setOrders] = useState<Order[]>([]);
+  const [systemNotifications, setSystemNotifications] = useState<SystemNotification[]>([]);
   const [stats, setStats] = useState<DashboardStats>({ visitors: 0, totalOrders: 0, totalAmount: 0 });
   const [showNotifications, setShowNotifications] = useState(false);
   
   // Site Configuration
-  const [siteConfig, setSiteConfig] = useState<SiteConfig>({ name: 'منصة حنين', slogan: '' });
+  const [siteConfig, setSiteConfig] = useState<SiteConfig>({ name: 'منصة Top1', slogan: '' });
 
   // Auth States
   const [isAuthenticatedAdmin, setIsAuthenticatedAdmin] = useState(false);
@@ -43,6 +54,7 @@ const App: React.FC = () => {
   // Load data function
   const refreshData = () => {
     setOrders(getOrders());
+    setSystemNotifications(getSystemNotifications());
     setStats(getStats());
     const config = getSiteConfig();
     setSiteConfig(config);
@@ -96,21 +108,54 @@ const App: React.FC = () => {
   const handleUserLogout = () => {
     logoutUser();
     setCurrentUser(null);
-    setActiveView('new-order');
     setIsAuthenticatedAdmin(false);
+    // Force view reset to ensure Login screen appears cleanly if logic changes
+    setActiveView('user-auth'); 
   }
 
-  // Filter notifications for the current user
-  const userNotifications = currentUser ? orders.filter(o => 
-    o.userId === currentUser.serialId && 
-    o.adminMessage && 
-    !o.isRead
-  ) : [];
+  // --- NOTIFICATION LOGIC ---
+  const getAggregatedNotifications = (): NotificationItem[] => {
+      if (!currentUser) return [];
 
-  const handleMarkAsRead = (orderId: string) => {
-    updateOrder(orderId, { isRead: true });
+      // 1. Order Notifications (Admin replies to orders)
+      const orderNotifs: NotificationItem[] = orders
+        .filter(o => o.userId === currentUser.serialId && o.adminMessage && !o.isRead)
+        .map(o => ({
+            id: o.id,
+            message: o.adminMessage || '',
+            timestamp: o.timestamp,
+            isRead: false,
+            type: 'order',
+            title: 'تحديث على الطلب'
+        }));
+
+      // 2. System Notifications (Broadcasts from Admin)
+      const sysNotifs: NotificationItem[] = systemNotifications
+        .filter(n => n.userId === currentUser.serialId && !n.isRead)
+        .map(n => ({
+            id: n.id,
+            message: n.message,
+            timestamp: n.timestamp,
+            isRead: false,
+            type: 'system',
+            title: n.title
+        }));
+
+      // Sort by newest
+      return [...orderNotifs, ...sysNotifs].sort((a, b) => b.timestamp - a.timestamp);
+  };
+
+  const userNotifications = getAggregatedNotifications();
+
+  const handleMarkAsRead = (notif: NotificationItem) => {
+    if (notif.type === 'order') {
+        updateOrder(notif.id, { isRead: true });
+        setActiveView('user-history'); // Go to history to see full details
+    } else {
+        markNotificationAsRead(notif.id);
+        // Stay here or maybe show a modal with full text if it's long
+    }
     refreshData();
-    setActiveView('user-history'); // Optional: Redirect to history when clicking notification
     setShowNotifications(false);
   };
 
@@ -189,6 +234,7 @@ const App: React.FC = () => {
                activeView === 'admin-wallet' ? 'الأرصدة' :
                activeView === 'admin-orders' ? 'الطلبات' :
                activeView === 'admin-team' ? 'فريق العمل' :
+               activeView === 'admin-broadcast' ? 'إرسال إشعارات' :
                activeView === 'user-auth' ? 'دخول' : 
                activeView === 'user-profile' ? 'حسابي' : 
                activeView === 'user-history' ? 'سجلي' : ''}
@@ -212,31 +258,52 @@ const App: React.FC = () => {
                 >
                     <Bell className="w-5 h-5 md:w-6 md:h-6" />
                     {userNotifications.length > 0 && (
-                        <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full border border-white animate-pulse"></span>
+                        <span className="absolute top-1.5 right-1.5 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-white animate-pulse"></span>
                     )}
                 </div>
 
                 {/* Dropdown */}
                 {showNotifications && (
-                    <div className="absolute left-0 mt-2 w-72 md:w-80 bg-white rounded-xl shadow-2xl border border-slate-100 overflow-hidden z-50 animate-fade-in origin-top-left">
+                    <div className="absolute left-0 mt-2 w-80 md:w-96 bg-white rounded-xl shadow-2xl border border-slate-100 overflow-hidden z-50 animate-fade-in origin-top-left">
                         <div className="bg-slate-50 px-4 py-3 border-b border-slate-100 flex justify-between items-center">
-                            <h3 className="font-bold text-slate-700 text-sm">الإشعارات</h3>
+                            <h3 className="font-bold text-slate-700 text-sm">الإشعارات الواردة</h3>
                             <span className="text-xs bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full">{userNotifications.length} جديد</span>
                         </div>
-                        <div className="max-h-64 md:max-h-80 overflow-y-auto">
+                        <div className="max-h-80 overflow-y-auto">
                             {userNotifications.length === 0 ? (
-                                <div className="p-6 text-center text-slate-400 text-sm">لا توجد إشعارات جديدة</div>
+                                <div className="p-8 text-center text-slate-400 text-sm">
+                                    <Bell className="w-8 h-8 mx-auto mb-2 opacity-20" />
+                                    لا توجد إشعارات جديدة
+                                </div>
                             ) : (
                                 userNotifications.map(notification => (
-                                    <div key={notification.id} className="p-4 border-b border-slate-100 hover:bg-slate-50 transition-colors cursor-pointer" onClick={() => handleMarkAsRead(notification.id)}>
-                                        <div className="flex items-start gap-2 mb-2">
-                                           <MessageCircle className="w-4 h-4 text-emerald-600 mt-0.5 flex-shrink-0" />
-                                           <p className="text-sm text-slate-600 font-medium">{notification.adminMessage}</p>
+                                    <div 
+                                        key={notification.id} 
+                                        className={`p-4 border-b border-slate-50 hover:bg-slate-50 transition-colors cursor-pointer relative
+                                            ${notification.type === 'system' ? 'bg-pink-50/30' : ''}`}
+                                        onClick={() => handleMarkAsRead(notification)}
+                                    >
+                                        <div className="flex items-start gap-3">
+                                           {/* Icon Based on Type */}
+                                           <div className={`p-2 rounded-full flex-shrink-0 
+                                                ${notification.type === 'order' ? 'bg-emerald-100 text-emerald-600' : 'bg-pink-100 text-pink-600'}`}>
+                                                {notification.type === 'order' ? <MessageCircle className="w-4 h-4" /> : <Megaphone className="w-4 h-4" />}
+                                           </div>
+                                           
+                                           <div className="flex-1">
+                                                <div className="flex justify-between items-start mb-1">
+                                                    <span className={`text-xs font-bold ${notification.type === 'order' ? 'text-emerald-700' : 'text-pink-700'}`}>
+                                                        {notification.title || (notification.type === 'order' ? 'رد على طلبك' : 'إشعار إداري')}
+                                                    </span>
+                                                    <span className="text-[10px] text-slate-400">{new Date(notification.timestamp).toLocaleTimeString('ar-EG')}</span>
+                                                </div>
+                                                <p className="text-sm text-slate-700 font-medium leading-relaxed line-clamp-2">
+                                                    {notification.message}
+                                                </p>
+                                           </div>
                                         </div>
-                                        <div className="flex justify-between items-center pl-6">
-                                            <span className="text-xs text-slate-400">{new Date(notification.timestamp).toLocaleTimeString('ar-EG')}</span>
-                                            <span className="text-xs text-emerald-600 font-bold hover:underline">عرض التفاصيل</span>
-                                        </div>
+                                        {/* Unread Dot */}
+                                        <div className="absolute right-2 top-1/2 -translate-y-1/2 w-1.5 h-1.5 bg-blue-500 rounded-full"></div>
                                     </div>
                                 ))
                             )}
@@ -296,6 +363,15 @@ const App: React.FC = () => {
                 ) : (
                   <div className="p-10 text-center text-red-500 font-bold">عذراً، لا تملك صلاحية الوصول لهذه الصفحة.</div>
                 )
+             )
+          )}
+
+          {/* ADMIN BROADCAST VIEW */}
+          {activeView === 'admin-broadcast' && (
+             !isAuthorizedAdmin ? (
+               <LoginForm onLogin={() => setIsAuthenticatedAdmin(true)} />
+             ) : (
+               <AdminBroadcast />
              )
           )}
 

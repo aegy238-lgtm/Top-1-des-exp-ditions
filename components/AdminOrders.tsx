@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { getOrders, updateOrder } from '../services/storageService';
 import { Order, OrderStatus, PaymentMethod } from '../types';
-import { CheckCircle2, MessageSquare, User, Clock, Search, Wallet, Coins } from 'lucide-react';
+import { CheckCircle2, MessageSquare, User, Clock, Search, Wallet, Coins, Send, AlertCircle } from 'lucide-react';
 
 const AdminOrders: React.FC = () => {
   const [orders, setOrders] = useState<Order[]>([]);
@@ -24,15 +24,17 @@ const AdminOrders: React.FC = () => {
   const handleConfirmOrder = () => {
     if (!selectedOrder) return;
 
-    const message = adminMessage || 'تم تنفيذ طلبك بنجاح!';
+    const message = adminMessage || 'تم تنفيذ طلبك بنجاح! شكراً لاستخدامك منصة Top1.';
     
+    // This updates the order AND sets isRead to false, triggering the user's notification bell
     updateOrder(selectedOrder.id, {
         status: OrderStatus.COMPLETED,
         adminMessage: message,
-        isRead: false
+        isRead: false 
     });
 
-    alert('تم تأكيد الطلب وإرسال الرسالة للمستخدم');
+    alert(`تم تأكيد الطلب بنجاح!\n\nتم إرسال إشعار للمستخدم: ${selectedOrder.username}\nنص الرسالة: "${message}"`);
+    
     setSelectedOrder(null);
     setAdminMessage('');
     refreshOrders();
@@ -144,27 +146,35 @@ const AdminOrders: React.FC = () => {
                             </div>
                             <div className="mt-4 p-3 bg-blue-50 text-blue-800 rounded-lg text-xs flex items-center gap-2">
                                 <Clock className="w-4 h-4" />
-                                هذا الطلب مدفوع مسبقاً من المحفظة. يرجى الشحن للعميل ثم تأكيد الطلب.
+                                هذا الطلب مدفوع مسبقاً من المحفظة. يرجى الشحن للعميل ثم تأكيد الطلب أدناه.
                             </div>
                         </div>
 
-                        <div className="bg-white rounded-xl border border-slate-200 p-6 shadow-sm flex-1">
-                            <h3 className="text-lg font-bold text-slate-800 mb-4">الرد على الطلب</h3>
-                            <div className="mb-4">
-                                <label className="block text-sm font-medium text-slate-700 mb-2">رسالة التأكيد (ستظهر للمستخدم في الإشعارات)</label>
+                        <div className="bg-white rounded-xl border border-slate-200 p-6 shadow-sm flex-1 flex flex-col">
+                            <h3 className="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">
+                                <Send className="w-5 h-5 text-emerald-600" />
+                                الرد على العميل وتأكيد الطلب
+                            </h3>
+                            
+                            <div className="bg-slate-50 p-4 rounded-lg border border-slate-200 mb-4">
+                                <p className="text-xs text-slate-500 mb-2 flex items-center gap-1">
+                                    <AlertCircle className="w-3 h-3" />
+                                    سيظهر هذا النص في إشعارات المستخدم فوراً:
+                                </p>
                                 <textarea 
-                                    className="w-full p-4 rounded-lg border border-slate-300 focus:ring-2 focus:ring-emerald-200 outline-none h-32"
-                                    placeholder="مثال: تم شحن حسابك بنجاح! شكراً لاستخدامك منصة حنين."
+                                    className="w-full p-4 rounded-lg border border-slate-300 focus:ring-2 focus:ring-emerald-200 outline-none h-32 text-sm"
+                                    placeholder="اكتب رسالة للعميل... مثال: تم شحن حسابك بنجاح! شكراً لك."
                                     value={adminMessage}
                                     onChange={(e) => setAdminMessage(e.target.value)}
                                 ></textarea>
                             </div>
+
                             <button 
                                 onClick={handleConfirmOrder}
-                                className="w-full py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold shadow-lg transition-all flex items-center justify-center gap-2"
+                                className="w-full py-4 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold shadow-lg transition-all flex items-center justify-center gap-2 mt-auto"
                             >
                                 <CheckCircle2 className="w-5 h-5" />
-                                تأكيد التنفيذ وإرسال الرسالة
+                                تأكيد التنفيذ وإرسال الإشعار
                             </button>
                         </div>
                     </div>

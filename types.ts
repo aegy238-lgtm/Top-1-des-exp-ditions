@@ -57,6 +57,16 @@ export interface Order {
   isRead?: boolean; // New: If user read the notification
 }
 
+export interface SystemNotification {
+    id: string;
+    userId: string; // Target user serial ID
+    title: string;
+    message: string;
+    timestamp: number;
+    isRead: boolean;
+    type: 'system';
+}
+
 export interface DashboardStats {
   visitors: number;
   totalOrders: number;

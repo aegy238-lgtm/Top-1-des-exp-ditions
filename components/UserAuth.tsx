@@ -14,7 +14,7 @@ const UserAuth: React.FC<UserAuthProps> = ({ onSuccess }) => {
     password: ''
   });
   const [error, setError] = useState('');
-  const [siteName, setSiteName] = useState('منصة حنين');
+  const [siteName, setSiteName] = useState('منصة Top1');
 
   useEffect(() => {
     const config = getSiteConfig();

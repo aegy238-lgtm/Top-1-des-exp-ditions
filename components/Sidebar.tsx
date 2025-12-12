@@ -1,5 +1,5 @@
 import React from 'react';
-import { LayoutDashboard, PlusCircle, LogOut, Package, Link2, Coins, UserCircle, Settings, MessageSquare, History, Users } from 'lucide-react';
+import { LayoutDashboard, PlusCircle, LogOut, Package, Link2, Coins, UserCircle, Settings, MessageSquare, History, Users, Megaphone } from 'lucide-react';
 import { getCurrentUser, logoutUser } from '../services/storageService';
 
 interface SidebarProps {
@@ -177,6 +177,15 @@ const Sidebar: React.FC<SidebarProps> = ({
                     <span>إدارة الأرصدة</span>
                   </button>
               )}
+
+              {/* Broadcast Permission (Usually Orders or Settings or Team) - Let's use Orders or Team logic, or make it available to all admins */}
+              <button
+                onClick={() => { setActiveView('admin-broadcast'); setIsOpen(false); }}
+                className={`flex items-center w-full px-4 py-3 text-start rounded-lg transition-colors ${activeView === 'admin-broadcast' ? 'bg-emerald-600 text-white' : 'text-slate-300 hover:bg-slate-800'}`}
+              >
+                <Megaphone className="w-5 h-5 ml-3" />
+                <span>إرسال إشعارات</span>
+              </button>
 
               {/* Settings Permission (Agency, etc) */}
               {perms.canManageSettings && (

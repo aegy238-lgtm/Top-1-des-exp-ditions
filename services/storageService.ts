@@ -1,8 +1,8 @@
-import { Order, OrderStatus, DashboardStats, AgencyConfig, User, PaymentMethod, BannerConfig, AppConfig, ContactConfig, SiteConfig, AdminPermissions } from '../types';
+import { Order, OrderStatus, DashboardStats, AgencyConfig, User, PaymentMethod, BannerConfig, AppConfig, ContactConfig, SiteConfig, AdminPermissions, SystemNotification } from '../types';
 import { GLOBAL_APPS_CONFIG, GLOBAL_BANNER_CONFIG, GLOBAL_CONTACT_CONFIG } from '../config';
 import { firebaseConfig, ENABLE_CLOUD_DB } from '../firebaseConfig';
 import { initializeApp } from 'firebase/app';
-import { getFirestore, collection, addDoc, getDocs, getDoc, doc, updateDoc, setDoc, query, orderBy, limit, deleteDoc } from 'firebase/firestore';
+import { getFirestore, collection, addDoc, getDocs, getDoc, doc, updateDoc, setDoc, query, orderBy, limit, deleteDoc, where, writeBatch } from 'firebase/firestore';
 
 // --- Local Storage Keys ---
 const ORDERS_KEY = 'haneen_orders';
@@ -14,6 +14,7 @@ const BANNER_CONFIG_KEY = 'haneen_banner_config';
 const APPS_CONFIG_KEY = 'haneen_apps_config';
 const CONTACT_CONFIG_KEY = 'haneen_contact_config';
 const SITE_CONFIG_KEY = 'haneen_site_config';
+const NOTIFICATIONS_KEY = 'haneen_notifications';
 
 // --- Super Admin Credentials ---
 const ADMIN_EMAIL = 'admin@haneen.com';
@@ -21,7 +22,7 @@ const ADMIN_PASS = 'zxcvbnmn123';
 
 // --- Default Site Config ---
 const DEFAULT_SITE_CONFIG: SiteConfig = {
-    name: 'منصة حنين للشحن',
+    name: 'منصة Top1',
     slogan: 'خدمات شحن الألعاب الفورية'
 };
 
@@ -115,6 +116,27 @@ const syncSettingsFromCloud = async () => {
     }
 }
 
+// NEW: Sync Notifications
+const syncNotificationsFromCloud = async () => {
+    if (!db || !isCloudHealthy) return;
+    try {
+        // Just fetch last 100 for efficiency
+        const q = query(collection(db, "notifications"), orderBy("timestamp", "desc"), limit(200));
+        const querySnapshot = await getDocs(q);
+        const cloudNotifs: SystemNotification[] = [];
+        querySnapshot.forEach((doc) => {
+            cloudNotifs.push(doc.data() as SystemNotification);
+        });
+        
+        if (cloudNotifs.length > 0) {
+             // Merge with local? Or overwrite? Overwrite is safer for sync
+             localStorage.setItem(NOTIFICATIONS_KEY, JSON.stringify(cloudNotifs));
+        }
+    } catch (e) {
+        handleCloudError(e, "Notifications Sync");
+    }
+};
+
 // --- Orders Logic ---
 let lastSyncTime = 0;
 
@@ -133,6 +155,7 @@ export const getOrders = (): Order[] => {
       syncOrdersFromCloud(); 
       syncUsersFromCloud();
       syncSettingsFromCloud();
+      syncNotificationsFromCloud();
   }
 
   return localOrders;
@@ -254,7 +277,15 @@ export const saveContactConfig = async (config: ContactConfig): Promise<void> =>
 export const getSiteConfig = (): SiteConfig => {
     try {
         const data = localStorage.getItem(SITE_CONFIG_KEY);
-        return data ? JSON.parse(data) : DEFAULT_SITE_CONFIG;
+        if (data) {
+            const config = JSON.parse(data);
+            // SANITIZATION: Force remove legacy names
+            if (config.name && (config.name.includes('Copy of') || config.name.includes('كازيه') || config.name.includes('منصة حنين'))) {
+                return DEFAULT_SITE_CONFIG;
+            }
+            return config;
+        }
+        return DEFAULT_SITE_CONFIG;
     } catch (e) {
         return DEFAULT_SITE_CONFIG;
     }
@@ -587,7 +618,6 @@ export const wipeUserBalances = (serialId: string): boolean => {
 };
 
 // --- NEW ADVANCED BAN SYSTEM ---
-// Type: 'none' (Unban), 'permanent' (Full Ban), 'temporary' (Freeze)
 export const setUserBanStatus = (serialId: string, type: 'none' | 'permanent' | 'temporary', durationHours?: number): { success: boolean, message?: string } => {
     const users = getUsers();
     const userIndex = users.findIndex(u => u.serialId === serialId);
@@ -618,10 +648,8 @@ export const setUserBanStatus = (serialId: string, type: 'none' | 'permanent' | 
     return { success: true };
 }
 
-// Deprecated: Kept for backward compatibility if needed, maps to new system
 export const toggleUserBan = (serialId: string): { success: boolean, newStatus?: boolean, message?: string } => {
     const result = setUserBanStatus(serialId, 'permanent'); 
-    // This logic is slightly flawed for toggle, but main UI now uses setUserBanStatus
     return { success: result.success, message: result.message };
 };
 
@@ -632,9 +660,8 @@ export const adminResetUserPassword = (serialId: string, newTemporaryPass: strin
     if (userIndex === -1) return { success: false, message: 'المستخدم غير موجود' };
     if (users[userIndex].email === ADMIN_EMAIL) return { success: false, message: 'لا يمكن تغيير كلمة مرور المالك من هنا' };
 
-    // In a real app, hash this password here
     users[userIndex].password = newTemporaryPass;
-    users[userIndex].mustChangePassword = true; // Force change on next login
+    users[userIndex].mustChangePassword = true; 
 
     saveUsers(users);
     return { success: true, message: 'تم إعادة تعيين كلمة المرور بنجاح' };
@@ -642,7 +669,6 @@ export const adminResetUserPassword = (serialId: string, newTemporaryPass: strin
 
 // --- NEW MANAGEMENT FUNCTIONS ---
 
-// 1. Remove Admin Privileges (Downgrade)
 export const removeAdminPrivileges = (serialId: string): { success: boolean, message?: string } => {
     const users = getUsers();
     const userIndex = users.findIndex(u => u.serialId === serialId);
@@ -657,7 +683,6 @@ export const removeAdminPrivileges = (serialId: string): { success: boolean, mes
     return { success: true, message: 'تم سحب الصلاحيات وعاد الحساب إلى مستخدم عادي.' };
 };
 
-// 2. Delete User Permanently
 export const deleteUserPermanently = (serialId: string): { success: boolean, message?: string } => {
     const users = getUsers();
     const userIndex = users.findIndex(u => u.serialId === serialId);
@@ -681,7 +706,6 @@ export const deleteUserPermanently = (serialId: string): { success: boolean, mes
     return { success: true, message: 'تم حذف الحساب وجميع البيانات نهائياً.' };
 };
 
-// 3. Deactivate/Hide User (Soft Delete)
 export const toggleUserDeactivation = (serialId: string): { success: boolean, message?: string, isDeactivated?: boolean } => {
     const users = getUsers();
     const userIndex = users.findIndex(u => u.serialId === serialId);
@@ -699,6 +723,85 @@ export const toggleUserDeactivation = (serialId: string): { success: boolean, me
         isDeactivated: newState
     };
 };
+
+// --- SYSTEM NOTIFICATIONS LOGIC ---
+
+export const getSystemNotifications = (): SystemNotification[] => {
+    try {
+        const data = localStorage.getItem(NOTIFICATIONS_KEY);
+        return data ? JSON.parse(data) : [];
+    } catch (e) {
+        return [];
+    }
+};
+
+export const saveSystemNotifications = async (notifications: SystemNotification[]) => {
+    localStorage.setItem(NOTIFICATIONS_KEY, JSON.stringify(notifications));
+    // Not syncing individually here to avoid mass writes in one function, usually handled by batch or single updates
+};
+
+export const sendBroadcastNotification = async (title: string, message: string): Promise<{success: boolean, message?: string}> => {
+    const users = getUsers();
+    const activeUsers = users.filter(u => !u.isBanned && !u.isDeactivated && u.email !== ADMIN_EMAIL);
+    
+    if (activeUsers.length === 0) {
+        return { success: false, message: 'لا يوجد مستخدمين نشطين لإرسال الإشعار لهم' };
+    }
+
+    const currentNotifications = getSystemNotifications();
+    const newNotifications: SystemNotification[] = [];
+
+    // Create a notification for EACH user
+    activeUsers.forEach(user => {
+        const notif: SystemNotification = {
+            id: Math.random().toString(36).substr(2, 9),
+            userId: user.serialId,
+            title: title,
+            message: message,
+            timestamp: Date.now(),
+            isRead: false,
+            type: 'system'
+        };
+        newNotifications.push(notif);
+    });
+
+    const updatedList = [...newNotifications, ...currentNotifications];
+    saveSystemNotifications(updatedList);
+
+    // Sync to Cloud (Batch Write for efficiency)
+    if (ENABLE_CLOUD_DB && db && isCloudHealthy) {
+        try {
+            const batch = writeBatch(db);
+            // Limit batch size to 500 (Firebase limit)
+            const batchList = newNotifications.slice(0, 490); 
+            
+            batchList.forEach((notif) => {
+                const ref = doc(collection(db, "notifications"));
+                batch.set(ref, notif);
+            });
+            
+            await batch.commit();
+        } catch (e) {
+            handleCloudError(e, "Broadcast Notification");
+            // Don't fail the whole operation if cloud fails, local is updated
+        }
+    }
+
+    return { success: true, message: `تم إرسال الإشعار بنجاح إلى ${activeUsers.length} مستخدم` };
+};
+
+export const markNotificationAsRead = async (notificationId: string) => {
+    const notifications = getSystemNotifications();
+    const index = notifications.findIndex(n => n.id === notificationId);
+    if (index !== -1) {
+        notifications[index].isRead = true;
+        saveSystemNotifications(notifications);
+        
+        // Note: We are not syncing read status back to cloud for every click to save quota in this demo,
+        // but in production, you should update the specific doc.
+    }
+}
+
 
 export const initializeData = () => {
     if (!localStorage.getItem(VISITORS_KEY)) {
