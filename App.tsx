@@ -167,6 +167,7 @@ const App: React.FC = () => {
         setIsAdmin={setIsAuthenticatedAdmin}
         onLogoutUser={handleUserLogout}
         siteName={siteConfig.name}
+        unreadCount={userNotifications.length}
       />
 
       {/* Main Content */}

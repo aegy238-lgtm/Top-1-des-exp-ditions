@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { getOrders, getCurrentUser } from '../services/storageService';
 import { Order, OrderStatus } from '../types';
-import { Clock, CheckCircle2, XCircle, AlertCircle, FileText, MessageCircle } from 'lucide-react';
+import { Clock, CheckCircle2, XCircle, AlertCircle, FileText, MessageCircle, Coins } from 'lucide-react';
 
 const UserHistory: React.FC = () => {
   const [myOrders, setMyOrders] = useState<Order[]>([]);
@@ -77,6 +77,12 @@ const UserHistory: React.FC = () => {
 
                                 <div className="text-left md:text-right">
                                     <span className="block text-2xl font-bold text-emerald-600">{order.amount} <span className="text-sm text-slate-500 font-normal">{order.currency}</span></span>
+                                    {order.coinAmount !== undefined && order.coinAmount > 0 && (
+                                        <div className="flex items-center justify-end gap-1 text-sm font-bold text-yellow-600 mt-1">
+                                            <Coins className="w-3 h-3" />
+                                            <span>{order.coinAmount.toLocaleString()} كوينز</span>
+                                        </div>
+                                    )}
                                     <span className={`inline-block px-3 py-1 rounded-full text-xs font-bold mt-1
                                         ${order.status === OrderStatus.COMPLETED || order.status === OrderStatus.AUTO_COMPLETED ? 'bg-green-100 text-green-700' : 
                                           order.status === OrderStatus.PENDING ? 'bg-yellow-100 text-yellow-700' : 'bg-red-100 text-red-700'}`}>

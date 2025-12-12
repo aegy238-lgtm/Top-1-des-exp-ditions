@@ -10,7 +10,8 @@ interface SidebarProps {
   isAdmin: boolean;
   setIsAdmin: (val: boolean) => void;
   onLogoutUser: () => void;
-  siteName: string; // New Prop
+  siteName: string; 
+  unreadCount?: number; // New prop for notifications
 }
 
 const Sidebar: React.FC<SidebarProps> = ({ 
@@ -21,7 +22,8 @@ const Sidebar: React.FC<SidebarProps> = ({
   isAdmin, 
   setIsAdmin,
   onLogoutUser,
-  siteName
+  siteName,
+  unreadCount = 0
 }) => {
   const currentUser = getCurrentUser();
 
@@ -115,10 +117,17 @@ const Sidebar: React.FC<SidebarProps> = ({
             <>
              <button
               onClick={() => { setActiveView('user-history'); setIsOpen(false); }}
-              className={`flex items-center w-full px-4 py-3 text-start rounded-lg transition-colors ${activeView === 'user-history' ? 'bg-emerald-600 text-white' : 'text-slate-300 hover:bg-slate-800'}`}
+              className={`flex items-center justify-between w-full px-4 py-3 text-start rounded-lg transition-colors ${activeView === 'user-history' ? 'bg-emerald-600 text-white' : 'text-slate-300 hover:bg-slate-800'}`}
             >
-              <History className="w-5 h-5 ml-3" />
-              <span>سجل عملياتي</span>
+              <div className="flex items-center">
+                <History className="w-5 h-5 ml-3" />
+                <span>سجل عملياتي</span>
+              </div>
+              {unreadCount > 0 && (
+                  <span className="bg-red-500 text-white text-xs font-bold px-2 py-0.5 rounded-full animate-pulse">
+                      {unreadCount}
+                  </span>
+              )}
             </button>
 
              <button

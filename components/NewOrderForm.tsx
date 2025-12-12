@@ -104,12 +104,20 @@ const NewOrderForm: React.FC<NewOrderFormProps> = ({ onOrderSuccess }) => {
       setFormData({...formData, appName: appName});
   };
 
-  const generateWhatsAppLink = (phone: string) => {
+  const calculateCoins = (): number => {
+      if (selectedAppConfig && formData.amount) {
+          return parseFloat(formData.amount) * selectedAppConfig.exchangeRate;
+      }
+      return 0;
+  };
+
+  const generateWhatsAppLink = (phone: string, coins: number) => {
       const message = `*طلب شحن جديد - منصة Top1* 🚀%0a
 👤 اسم الحساب: ${formData.username}%0a
 🆔 رقم الآيدي: ${formData.userId}%0a
 📱 التطبيق: ${formData.appName}%0a
 💰 المبلغ: ${formData.amount} ${CURRENCY_LABELS[formData.currency]}%0a
+🟡 الكوينز: ${coins.toLocaleString()}%0a
 💳 طريقة الدفع: عبر الوكيل%0a
 📅 التاريخ: ${new Date().toLocaleDateString('ar-EG')}`;
       return `https://wa.me/${phone}?text=${message}`;
@@ -126,6 +134,8 @@ const NewOrderForm: React.FC<NewOrderFormProps> = ({ onOrderSuccess }) => {
       setLoading(false);
       return;
     }
+
+    const calculatedCoins = calculateCoins();
 
     // Determine Logic based on Payment Method
     if (paymentMethod === PaymentMethod.WALLET) {
@@ -152,6 +162,7 @@ const NewOrderForm: React.FC<NewOrderFormProps> = ({ onOrderSuccess }) => {
             userId: formData.userId,
             appName: formData.appName,
             amount: amount,
+            coinAmount: calculatedCoins, // Save calculated coins
             currency: formData.currency,
             status: OrderStatus.PENDING,
             paymentMethod: PaymentMethod.WALLET,
@@ -183,6 +194,7 @@ const NewOrderForm: React.FC<NewOrderFormProps> = ({ onOrderSuccess }) => {
             userId: formData.userId,
             appName: formData.appName,
             amount: amount,
+            coinAmount: calculatedCoins, // Save calculated coins
             currency: formData.currency,
             status: OrderStatus.PENDING,
             paymentMethod: PaymentMethod.AGENT,
@@ -194,7 +206,7 @@ const NewOrderForm: React.FC<NewOrderFormProps> = ({ onOrderSuccess }) => {
 
         // Use configured phone or default
         const targetPhone = contactConfig?.primaryPhone || DEFAULT_WHATSAPP;
-        const whatsappUrl = generateWhatsAppLink(targetPhone);
+        const whatsappUrl = generateWhatsAppLink(targetPhone, calculatedCoins);
 
         setTimeout(() => {
             setLoading(false);
@@ -204,10 +216,6 @@ const NewOrderForm: React.FC<NewOrderFormProps> = ({ onOrderSuccess }) => {
         }, 1500);
     }
   };
-
-  const calculatedCoins = selectedAppConfig && formData.amount 
-    ? (parseFloat(formData.amount) * selectedAppConfig.exchangeRate).toLocaleString()
-    : '---';
 
   return (
     <div className="max-w-3xl mx-auto">
@@ -353,7 +361,7 @@ const NewOrderForm: React.FC<NewOrderFormProps> = ({ onOrderSuccess }) => {
                             ستحصل على (كوينز)
                         </label>
                         <div className="w-full px-4 py-3 rounded-xl border border-slate-100 bg-slate-50 text-slate-600 font-bold text-lg flex items-center gap-2">
-                            {calculatedCoins} <span className="text-xs font-normal text-slate-400">عملة</span>
+                            {calculateCoins().toLocaleString()} <span className="text-xs font-normal text-slate-400">عملة</span>
                         </div>
                     </div>
                 </div>
@@ -448,7 +456,7 @@ const NewOrderForm: React.FC<NewOrderFormProps> = ({ onOrderSuccess }) => {
                             {contactConfig?.secondaryPhone && (
                                 <button
                                     type="button"
-                                    onClick={() => window.open(generateWhatsAppLink(contactConfig.secondaryPhone!), '_blank')}
+                                    onClick={() => window.open(generateWhatsAppLink(contactConfig.secondaryPhone!, calculateCoins()), '_blank')}
                                     className="w-full py-3 rounded-xl font-bold text-slate-600 border-2 border-slate-200 hover:bg-slate-50 transition-all text-sm md:text-base"
                                 >
                                     تواصل مع الوكيل 2
@@ -457,7 +465,7 @@ const NewOrderForm: React.FC<NewOrderFormProps> = ({ onOrderSuccess }) => {
                              {contactConfig?.tertiaryPhone && (
                                 <button
                                     type="button"
-                                    onClick={() => window.open(generateWhatsAppLink(contactConfig.tertiaryPhone!), '_blank')}
+                                    onClick={() => window.open(generateWhatsAppLink(contactConfig.tertiaryPhone!, calculateCoins()), '_blank')}
                                     className="w-full py-3 rounded-xl font-bold text-slate-600 border-2 border-slate-200 hover:bg-slate-50 transition-all text-sm md:text-base"
                                 >
                                     تواصل مع الوكيل 3

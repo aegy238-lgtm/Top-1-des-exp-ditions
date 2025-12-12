@@ -47,6 +47,7 @@ export interface Order {
   userId: string;
   appName: string;
   amount: number;
+  coinAmount?: number; // New: Persisted calculated coins
   currency: Currency;
   status: OrderStatus;
   paymentMethod?: PaymentMethod;

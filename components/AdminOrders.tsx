@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { getOrders, updateOrder } from '../services/storageService';
 import { Order, OrderStatus, PaymentMethod } from '../types';
-import { CheckCircle2, MessageSquare, User, Clock, Search, Wallet } from 'lucide-react';
+import { CheckCircle2, MessageSquare, User, Clock, Search, Wallet, Coins } from 'lucide-react';
 
 const AdminOrders: React.FC = () => {
   const [orders, setOrders] = useState<Order[]>([]);
@@ -96,7 +96,14 @@ const AdminOrders: React.FC = () => {
                                         <Wallet className="w-3 h-3" />
                                         <span>{order.paymentMethod === PaymentMethod.WALLET ? 'محفظة' : 'وكيل'}</span>
                                      </div>
-                                     <span className="font-bold text-emerald-600 text-sm">{order.amount} $</span>
+                                     <div className="text-right">
+                                        <span className="block font-bold text-emerald-600 text-sm">{order.amount} $</span>
+                                        {order.coinAmount !== undefined && (
+                                            <span className="text-[10px] text-yellow-600 font-medium block">
+                                                {order.coinAmount.toLocaleString()} C
+                                            </span>
+                                        )}
+                                     </div>
                                 </div>
                             </div>
                         ))
@@ -127,8 +134,15 @@ const AdminOrders: React.FC = () => {
                                     <span className="block text-slate-500 mb-1">المبلغ المخصوم</span>
                                     <span className="font-bold text-red-600">{selectedOrder.amount} {selectedOrder.currency}</span>
                                 </div>
+                                {selectedOrder.coinAmount !== undefined && (
+                                    <div className="col-span-2 bg-yellow-50 p-2 rounded border border-yellow-100 flex items-center gap-2 mt-2">
+                                        <Coins className="w-5 h-5 text-yellow-600" />
+                                        <span className="text-slate-700 font-medium">الكمية المطلوبة للشحن: </span>
+                                        <span className="font-bold text-yellow-700 text-lg">{selectedOrder.coinAmount.toLocaleString()} كوينز</span>
+                                    </div>
+                                )}
                             </div>
-                            <div className="mt-4 p-3 bg-yellow-50 text-yellow-800 rounded-lg text-xs flex items-center gap-2">
+                            <div className="mt-4 p-3 bg-blue-50 text-blue-800 rounded-lg text-xs flex items-center gap-2">
                                 <Clock className="w-4 h-4" />
                                 هذا الطلب مدفوع مسبقاً من المحفظة. يرجى الشحن للعميل ثم تأكيد الطلب.
                             </div>
