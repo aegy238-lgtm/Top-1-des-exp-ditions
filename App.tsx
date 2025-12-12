@@ -13,6 +13,7 @@ import AdminWallet from './components/AdminWallet';
 import AdminOrders from './components/AdminOrders';
 import AdminTeamManagement from './components/AdminTeamManagement';
 import AdminBroadcast from './components/AdminBroadcast';
+import AdminGlobalControl from './components/AdminGlobalControl';
 import HeroBanner from './components/HeroBanner';
 import AdminBannerSettings from './components/AdminBannerSettings';
 import AdminAppsSettings from './components/AdminAppsSettings';
@@ -25,7 +26,7 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 // Initialize dummy data
 initializeData();
 
-type ViewState = 'dashboard' | 'new-order' | 'agency-integration' | 'user-auth' | 'admin-wallet' | 'user-profile' | 'admin-orders' | 'user-history' | 'admin-team' | 'admin-broadcast';
+type ViewState = 'dashboard' | 'new-order' | 'agency-integration' | 'user-auth' | 'admin-wallet' | 'user-profile' | 'admin-orders' | 'user-history' | 'admin-team' | 'admin-broadcast' | 'admin-global-control';
 
 interface NotificationItem {
     id: string;
@@ -197,6 +198,7 @@ const App: React.FC = () => {
   // Permission checks
   const canManageSettings = currentUser?.permissions?.canManageSettings;
   const canManageTeam = currentUser?.permissions?.canManageTeam;
+  const isSuperAdmin = currentUser?.email === 'admin@haneen.com';
 
   // --- MAIN APP (AUTHENTICATED) ---
   return (
@@ -235,6 +237,7 @@ const App: React.FC = () => {
                activeView === 'admin-orders' ? 'الطلبات' :
                activeView === 'admin-team' ? 'فريق العمل' :
                activeView === 'admin-broadcast' ? 'إرسال إشعارات' :
+               activeView === 'admin-global-control' ? 'تصفير الكوينز' :
                activeView === 'user-auth' ? 'دخول' : 
                activeView === 'user-profile' ? 'حسابي' : 
                activeView === 'user-history' ? 'سجلي' : ''}
@@ -372,6 +375,19 @@ const App: React.FC = () => {
                <LoginForm onLogin={() => setIsAuthenticatedAdmin(true)} />
              ) : (
                <AdminBroadcast />
+             )
+          )}
+
+          {/* ADMIN GLOBAL CONTROL VIEW (Super Admin Only) */}
+          {activeView === 'admin-global-control' && (
+             !isAuthorizedAdmin ? (
+               <LoginForm onLogin={() => setIsAuthenticatedAdmin(true)} />
+             ) : (
+                isSuperAdmin ? (
+                    <AdminGlobalControl />
+                ) : (
+                    <div className="p-10 text-center text-red-500 font-bold">عذراً، هذه الصفحة مخصصة للمالك فقط.</div>
+                )
              )
           )}
 
